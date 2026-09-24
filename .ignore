@@ -1,0 +1,24 @@
+# ripgrep-only overrides: NOT read by git, and NOT read by the @-mention picker.
+#
+# .gitignore hides every child repo so the root tree stays clean, but ripgrep honours it too,
+# which would leave root-level Grep/Glob searching only the shared layer. These negations restore
+# agent-side search across the workspace; git is unaffected.
+#
+# @-mention autocomplete is a separate problem: the picker stops at nested .git boundaries and
+# reads neither .gitignore nor .ignore (anthropics/claude-code#94991). See README.md for the
+# `fileSuggestion` workaround.
+#
+# Add a line here when a new org repo is cloned in and gitignored. Personal checkouts: list them in
+# .git/info/exclude and negate them in a local .rgignore (gitignored) instead.
+
+!/catalog_opm/
+!/cli/
+!/core/
+!/enhancements/
+!/library/
+!/modules/
+!/opm/
+!/opm-operator/
+!/opmodel.dev/
+!/opm-suite-installer/
+!/.github/

@@ -1,0 +1,22 @@
+version: "3"
+
+# The fixture flow shared by cli and opm-operator (hack/fixtures.sh, the
+# tests/fixtures | test/fixtures Go helper): byte-identical copies in both repos,
+# because each repo's CI must run from a standalone clone. This task is the
+# drift check; when the copies genuinely need to diverge, promote the script into
+# opm instead of forking it.
+tasks:
+  lint:
+    desc: "Check that the fixture flow files are byte-identical between cli and opm-operator (hack/fixtures.sh, fixtures.go, fixtures_test.go)"
+    cmds:
+      - |
+        set -eu
+        rc=0
+        pair() {
+          if cmp -s "$1" "$2"; then printf 'ok    %s == %s\n' "$1" "$2"
+          else printf 'DRIFT %s != %s\n' "$1" "$2"; diff -u "$1" "$2" | head -40; rc=1; fi
+        }
+        pair cli/hack/fixtures.sh opm-operator/hack/fixtures.sh
+        pair cli/tests/fixtures/fixtures.go opm-operator/test/fixtures/fixtures.go
+        pair cli/tests/fixtures/fixtures_test.go opm-operator/test/fixtures/fixtures_test.go
+        exit $rc

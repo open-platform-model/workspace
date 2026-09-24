@@ -1,0 +1,147 @@
+version: "3"
+
+silent: true
+
+env:
+  # Canonical mapping (Registry Policy, root CLAUDE.md): every OPM domain
+  # resolves from GHCR — opmodel.dev for published artifacts, testing.opmodel.dev
+  # for the fixture/experiment namespace. Routing either to the local registry is
+  # a deliberate per-task override, not the default. A CUE_REGISTRY already
+  # exported in the shell takes precedence over this.
+  CUE_REGISTRY: "opmodel.dev=ghcr.io/open-platform-model,testing.opmodel.dev=ghcr.io/open-platform-model,registry.cue.works"
+
+includes:
+  # Shared configuration (provides registry variables)
+  config:
+    taskfile: .tasks/config.yml
+    internal: true
+
+  # Docker OCI registry management
+  registry:
+    taskfile: .tasks/registry/docker.yml
+    dir: .
+
+  modules:
+    taskfile: modules/Taskfile.yml
+    optional: true
+    dir: modules
+    internal: true
+
+  enhancements:
+    taskfile: enhancements/Taskfile.yml
+    optional: true
+    dir: enhancements
+
+  # Pins outside cue.mod: Platform samples/seeds, the CI opm pin, published fixtures
+  deps:pins:
+    taskfile: .tasks/deps.yml
+    dir: .
+
+  # Workspace bootstrap (clone missing org repos)
+  workspace:
+    taskfile: .tasks/workspace.yml
+    dir: .
+
+  # Shared fixture flow (cli <-> opm-operator identical copies)
+  fixtures:
+    taskfile: .tasks/fixtures.yml
+    dir: .
+
+  # Shared doc-comment gate script (core <-> catalog_opm identical copies)
+  docs:
+    taskfile: .tasks/docs.yml
+    dir: .
+
+tasks:
+  deps:update:
+    desc: "Update CUE deps to latest across catalog_opm/cli/core/opm-operator/modules/opm-modules cue.mod files (fixture trees and .claude worktrees excluded; includes cli/hack/platform), the CLI templates, and the Platform pins outside a cue.mod file (operator sample Platform, the cli seeded-platform Go pins in internal/config/templates.go). Not covered: published fixtures (task deps:pins:fixtures), the CI opm pin (task deps:pins:opm-cli), Go deps (Dependabot)"
+    cmds:
+      - task: deps:update:modules
+      - task: deps:update:templates
+      - task: deps:pins:platform-pins
+
+  deps:update:modules:
+    desc: Update CUE deps in catalog_opm/cli/core/opm-operator/modules/opm-modules (excludes templates and .claude worktrees; library has its own cue:deps:update)
+    internal: true
+    cmds:
+      - |
+        # library/ is excluded on purpose: it owns `task cue:deps:update`.
+        # opm-modules publishes on push to main: a fix(deps) commit there releases
+        # every module, which is the point of bumping a fleet.
+        # .claude/worktrees are other checkouts of the same repo: never touched here.
+        find catalog_opm cli core opm-operator modules opm-modules -name "cue.mod" -type d \
+          -not -path '*/.build/*' -not -path '*/.claude/*' -not -path '*/testdata/*' -not -path '*/test/fixtures/*' -not -path '*/tests/fixtures/*' 2>/dev/null \
+          | grep -v 'cli/templates/' | sort | while read -r moddir; do
+          dir=$(dirname "$moddir")
+          printf "==> Updating deps in \033[1;36m%s\033[0m\n" "$dir"
+          cd "$dir"
+
+          deps=$(sed -n '/^deps: {$/,/^}$/p' cue.mod/module.cue 2>/dev/null | grep -oP '^\s*"\K[^"]+(?=":\s*\{)') || true
+
+          if [ -n "$deps" ]; then
+            tmpfile=$(mktemp)
+
+            for dep in $deps; do
+              old_ver=$(grep -FA5 "\"${dep}\"" cue.mod/module.cue | grep -oP 'v:\s*"\K[^"]+' | head -1)
+              printf '%s:%s\n' "$dep" "$old_ver" >> "$tmpfile"
+            done
+
+            # Fetch ALL deps in a single resolution pass. Updating one at a time
+            # fails whenever several deps are stale at once: each `cue mod get`
+            # must resolve the whole module, and the not-yet-updated siblings
+            # (still pinned to versions that may no longer exist) break that
+            # resolution, so every get silently no-ops. The "@v<major>" suffix on
+            # each dep key makes get pull the latest version within that major.
+            # shellcheck disable=SC2086
+            cue mod get $deps > /dev/null 2>&1 || true
+
+            cue mod tidy > /dev/null 2>&1 || true
+
+            while IFS=: read -r dep old_ver; do
+              new_ver=$(grep -FA5 "\"${dep}\"" cue.mod/module.cue | grep -oP 'v:\s*"\K[^"]+' | head -1)
+              if [ "$old_ver" != "$new_ver" ]; then
+                printf "    %s: \033[1;33m%s\033[0m -> \033[0;32m%s\033[0m\n" "$dep" "$old_ver" "$new_ver"
+              else
+                printf "    %s: \033[2m%s (unchanged)\033[0m\n" "$dep" "$old_ver"
+              fi
+            done < "$tmpfile"
+
+            rm -f "$tmpfile"
+          else
+            printf "    (no deps)\n"
+          fi
+
+          cd - > /dev/null
+        done
+        printf "Done.\n"
+
+  deps:update:templates:
+    desc: Update CUE deps in CLI template modules (cli/templates/*/cue.mod/module.cue)
+    internal: true
+    cmds:
+      - |
+        find cli/templates -mindepth 2 -maxdepth 2 -name "cue.mod" -type d 2>/dev/null | sort | while read -r moddir; do
+          dir=$(dirname "$moddir")
+          printf "==> Updating template deps in \033[1;36m%s\033[0m\n" "$dir"
+          (
+            cd "$dir"
+            deps=$(sed -n '/^deps: {$/,/^}$/p' cue.mod/module.cue 2>/dev/null | grep -oP '^\s*"\K[^"]+(?=":\s*\{)') || true
+
+            if [ -z "$deps" ]; then
+              printf "    (no deps)\n"
+              exit 0
+            fi
+
+            for dep in $deps; do
+              old_ver=$(grep -FA5 "\"${dep}\"" cue.mod/module.cue | grep -oP 'v:\s*"\K[^"]+' | head -1)
+              cue mod get "$dep" > /dev/null 2>&1 || true
+              new_ver=$(grep -FA5 "\"${dep}\"" cue.mod/module.cue | grep -oP 'v:\s*"\K[^"]+' | head -1)
+              if [ -n "$new_ver" ] && [ "$old_ver" != "$new_ver" ]; then
+                printf "    %s: \033[1;33m%s\033[0m -> \033[0;32m%s\033[0m\n" "$dep" "$old_ver" "$new_ver"
+              else
+                printf "    %s: \033[2m%s (unchanged)\033[0m\n" "$dep" "$old_ver"
+              fi
+            done
+          )
+        done
+        printf "Done.\n"

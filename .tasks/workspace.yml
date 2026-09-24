@@ -1,0 +1,24 @@
+version: "3"
+
+# Workspace bootstrap. Run from the workspace root.
+vars:
+  ORG_REPOS: catalog_opm cli core enhancements library modules opm opm-operator opmodel.dev opm-suite-installer .github
+
+tasks:
+  clone:
+    desc: "Clone every open-platform-model repo missing from this workspace (HTTPS; set GIT_PROTOCOL=ssh for SSH). Existing checkouts are left untouched"
+    cmds:
+      - |
+        for repo in {{.ORG_REPOS}}; do
+          if [ -d "$repo/.git" ]; then
+            printf "    %s: \033[2mpresent\033[0m\n" "$repo"
+            continue
+          fi
+          if [ "${GIT_PROTOCOL:-https}" = "ssh" ]; then
+            url="git@github.com:open-platform-model/${repo}.git"
+          else
+            url="https://github.com/open-platform-model/${repo}.git"
+          fi
+          printf "==> Cloning \033[1;36m%s\033[0m\n" "$repo"
+          git clone "$url" "$repo"
+        done

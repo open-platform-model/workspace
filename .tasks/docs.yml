@@ -1,0 +1,19 @@
+version: "3"
+
+# Doc-comment tooling shared between repos as identical copies.
+# core/.tasks/doc-check.sh and catalog_opm/.tasks/doc-check.sh must stay
+# byte-identical: each repo runs it from a standalone clone in CI.
+
+tasks:
+  lint:
+    desc: "Check that .tasks/doc-check.sh is byte-identical between core and catalog_opm"
+    cmds:
+      - |
+        set -eu
+        rc=0
+        pair() {
+          if cmp -s "$1" "$2"; then printf 'ok    %s == %s\n' "$1" "$2"
+          else printf 'DRIFT %s != %s\n' "$1" "$2"; diff -u "$1" "$2" | head -40; rc=1; fi
+        }
+        pair core/.tasks/doc-check.sh catalog_opm/.tasks/doc-check.sh
+        exit $rc

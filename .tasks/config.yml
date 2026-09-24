@@ -1,0 +1,26 @@
+version: '3'
+
+# Central Configuration for Workspace Taskfiles
+# Single source of truth for shared configuration at the workspace root.
+#
+# NOTE: This file only defines variables. Include it in other
+# taskfiles to access shared configuration.
+
+vars:
+  # ============================================================================
+  # Registry Configuration - Docker
+  # ============================================================================
+
+  REGISTRY_CONTAINER: opm-registry
+  REGISTRY_PORT: 5000
+  REGISTRY_IMAGE: registry:2
+  REGISTRY_DATA_DIR: '{{.ROOT_DIR}}/.registry-data'
+
+  # CUE_REGISTRY prefix mapping for tasks that deliberately opt into the local
+  # registry. Per the Registry Policy (root CLAUDE.md) both opmodel.dev/* and
+  # testing.opmodel.dev/* resolve from GHCR by default; this is the override, used
+  # for local iteration and for the gated local-publish exception.
+  LOCAL_REGISTRY: testing.opmodel.dev=localhost:5000+insecure
+
+  # Plain HTTP URL for direct registry API calls (curl, health checks, etc.)
+  REGISTRY_HTTP_URL: localhost:{{.REGISTRY_PORT}}

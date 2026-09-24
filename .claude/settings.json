@@ -1,0 +1,38 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:api.github.com)",
+      "WebFetch(domain:cuelang.org)",
+      "WebFetch(domain:cuetorials.com)",
+      "WebFetch(domain:fluxcd.io)",
+      "WebFetch(domain:gateway-api.sigs.k8s.io)",
+      "Bash(openspec status *)",
+      "Bash(openspec instructions *)",
+      "Bash(openspec validate *)",
+      "Bash(openspec --version)",
+      "Bash(openspec --help)",
+      "Bash(openspec list *)",
+      "Bash(openspec new *)",
+      "Bash(openspec schemas *)",
+      "Bash(openspec schema *)",
+      "Bash(openspec templates *)",
+      "Bash(task --list)",
+      "Bash(task vet *)",
+      "Bash(task fmt *)",
+      "Bash(cue fmt *)",
+      "Bash(cue vet *)",
+      "Bash(go version *)",
+      "Bash(go build *)",
+      "Bash(go vet *)",
+      "Bash(go test *)",
+      "Bash(git --version)",
+      "Bash(export CUE_REGISTRY='opmodel.dev=ghcr.io/open-platform-model,testing.opmodel.dev=ghcr.io/open-platform-model,registry.cue.works')",
+      "Bash(export OPM_REGISTRY=\"$CUE_REGISTRY\")"
+    ]
+  },
+  "enabledMcpjsonServers": [
+    "context7"
+  ]
+}

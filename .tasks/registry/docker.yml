@@ -1,0 +1,258 @@
+version: '3'
+
+# Docker OCI Registry Management Tasks
+#
+# Manages the persistent Docker-based OCI registry for local development.
+#
+# Registry Policy (root CLAUDE.md): nothing REQUIRES this registry by default —
+# both opmodel.dev/* and testing.opmodel.dev/* resolve from ghcr.io/open-platform-model.
+# Start it only for:
+#   - local iteration on a testing.opmodel.dev/* fixture before it is published,
+#   - explicitly user-requested local publishes of opmodel.dev/* (gated exception),
+#   - Flux bundle artifacts for local demo/e2e clusters.
+# Do not start this registry to fix "module not found" on published modules — that
+# is a GHCR or mapping problem.
+
+includes:
+  config:
+    taskfile: ../config.yml
+    internal: true
+
+tasks:
+  # ============================================================================
+  # Registry Lifecycle
+  # ============================================================================
+
+  start:
+    desc: Start Docker OCI registry
+    summary: |
+      Start the local OCI registry container for module publishing.
+
+      Configuration:
+        Container: {{.REGISTRY_CONTAINER}}
+        Port: {{.REGISTRY_PORT}}
+        Image: {{.REGISTRY_IMAGE}}
+        Data: {{.REGISTRY_DATA_DIR}}
+
+      The registry will be available at {{.LOCAL_REGISTRY}}
+    cmds:
+      - |
+        if docker ps -f name={{.REGISTRY_CONTAINER}} | grep -q {{.REGISTRY_CONTAINER}}; then
+          echo "Registry is already running"
+        elif docker ps -a -f name={{.REGISTRY_CONTAINER}} | grep -q {{.REGISTRY_CONTAINER}}; then
+          echo "Starting existing registry container..."
+          docker start {{.REGISTRY_CONTAINER}}
+          echo "Registry started at {{.LOCAL_REGISTRY}}"
+        else
+          echo "Creating new registry container..."
+          mkdir -p "{{.REGISTRY_DATA_DIR}}"
+          docker run -d \
+            --name {{.REGISTRY_CONTAINER}} \
+            -p {{.REGISTRY_PORT}}:5000 \
+            --user "$(id -u):$(id -g)" \
+            -v "$(realpath {{.REGISTRY_DATA_DIR}}):/var/lib/registry" \
+            --restart=unless-stopped \
+            {{.REGISTRY_IMAGE}}
+          echo "Registry created and started at {{.LOCAL_REGISTRY}}"
+        fi
+
+  stop:
+    desc: Stop Docker OCI registry (preserve data)
+    summary: |
+      Stop the registry container without removing it or its data.
+      Use 'start' to restart it later.
+    cmds:
+      - |
+        if docker ps -f name={{.REGISTRY_CONTAINER}} | grep -q {{.REGISTRY_CONTAINER}}; then
+          echo "Stopping registry..."
+          docker stop {{.REGISTRY_CONTAINER}}
+          echo "Registry stopped (data preserved)"
+        else
+          echo "Registry is not running"
+        fi
+
+  restart:
+    desc: Restart Docker OCI registry
+    cmds:
+      - task: stop
+      - task: start
+
+  # ============================================================================
+  # Registry Status
+  # ============================================================================
+
+  status:
+    desc: Show registry status and list published modules
+    summary: |
+      Display the current status of the Docker registry and list all
+      published modules with their versions.
+    cmds:
+      - |
+        echo "Docker OCI Registry Status:"
+        echo ""
+
+        if docker ps -f name={{.REGISTRY_CONTAINER}} | grep -q {{.REGISTRY_CONTAINER}}; then
+          echo "  Status: Running"
+          echo "  Container: {{.REGISTRY_CONTAINER}}"
+          echo "  URL: {{.LOCAL_REGISTRY}}"
+          echo "  Port: {{.REGISTRY_PORT}}"
+          echo ""
+
+          echo "Published Modules:"
+          if command -v jq >/dev/null 2>&1; then
+            REPOS=$(curl -s http://{{.REGISTRY_HTTP_URL}}/v2/_catalog | jq -r '.repositories[]' 2>/dev/null || echo "")
+            if [ -n "$REPOS" ]; then
+              echo "$REPOS" | while read -r repo; do
+                TAGS=$(curl -s "http://{{.REGISTRY_HTTP_URL}}/v2/$repo/tags/list" | jq -r '.tags[]?' 2>/dev/null || echo "")
+                if [ -n "$TAGS" ]; then
+                  echo "  $repo"
+                  echo "$TAGS" | while read -r tag; do
+                    echo "    - $tag"
+                  done
+                else
+                  echo "  $repo (no tags)"
+                fi
+              done
+            else
+              echo "  (no modules published)"
+            fi
+          else
+            echo "  (install 'jq' to see module list)"
+            curl -s http://{{.REGISTRY_HTTP_URL}}/v2/_catalog 2>/dev/null || echo "  (registry not accessible)"
+          fi
+        elif docker ps -a -f name={{.REGISTRY_CONTAINER}} | grep -q {{.REGISTRY_CONTAINER}}; then
+          echo "  Status: Stopped"
+          echo "  Container: {{.REGISTRY_CONTAINER}}"
+          echo ""
+          echo "Use 'task registry:start' to start the registry"
+        else
+          echo "  Status: Not created"
+          echo ""
+          echo "Use 'task registry:start' to create and start the registry"
+        fi
+
+  # ============================================================================
+  # List Modules
+  # ============================================================================
+
+  list:
+    desc: List all modules in the registry
+    summary: |
+      List all published modules and their versions in the local registry.
+
+      Output format: module@version (one per line)
+
+      Requires the registry to be running and 'jq' to be installed.
+    cmds:
+      - |
+        if ! docker ps -f name={{.REGISTRY_CONTAINER}} | grep -q {{.REGISTRY_CONTAINER}}; then
+          echo "Registry is not running. Use 'task registry:start' to start it."
+          exit 1
+        fi
+
+        if ! command -v jq >/dev/null 2>&1; then
+          echo "jq is required but not installed."
+          exit 1
+        fi
+
+        REPOS=$(curl -s http://{{.REGISTRY_HTTP_URL}}/v2/_catalog | jq -r '.repositories[]' 2>/dev/null || echo "")
+        if [ -z "$REPOS" ]; then
+          echo "No modules published"
+          exit 0
+        fi
+
+        echo "$REPOS" | while read -r repo; do
+          TAGS=$(curl -s "http://{{.REGISTRY_HTTP_URL}}/v2/$repo/tags/list" | jq -r '.tags[]?' 2>/dev/null | sort -V || echo "")
+          if [ -n "$TAGS" ]; then
+            echo "$TAGS" | while read -r tag; do
+              echo "$repo@$tag"
+            done
+          fi
+        done
+
+  # ============================================================================
+  # Health Checks
+  # ============================================================================
+
+  health:
+    desc: Check registry health
+    cmds:
+      - |
+        echo "Registry Health Check:"
+        echo ""
+
+        if ! docker ps -f name={{.REGISTRY_CONTAINER}} | grep -q {{.REGISTRY_CONTAINER}}; then
+          echo "  Container is not running"
+          exit 1
+        fi
+        echo "  Container is running"
+
+        if ! curl -sf http://{{.REGISTRY_HTTP_URL}}/v2/ >/dev/null; then
+          echo "  Registry API not accessible"
+          exit 1
+        fi
+        echo "  Registry API accessible"
+
+        if ! curl -sf http://{{.REGISTRY_HTTP_URL}}/v2/_catalog >/dev/null; then
+          echo "  Catalog endpoint not working"
+          exit 1
+        fi
+        echo "  Catalog endpoint working"
+
+        echo ""
+        echo "All health checks passed"
+
+  # ============================================================================
+  # Cleanup Operations
+  # ============================================================================
+
+  remove:
+    desc: Remove registry container (FORCE=true to also delete data)
+    summary: |
+      Remove the registry container but keep the data directory.
+      The container can be recreated with 'start'.
+
+      Use FORCE=true to also delete the registry data directory.
+    vars:
+      FORCE: '{{.FORCE | default "false"}}'
+    cmds:
+      - |
+        if docker ps -a -f name={{.REGISTRY_CONTAINER}} -q | grep -q .; then
+          echo "Removing registry container..."
+          docker rm -f {{.REGISTRY_CONTAINER}}
+          echo "Container removed"
+        else
+          echo "Registry container does not exist"
+        fi
+
+        if [ "{{.FORCE}}" = "true" ] && [ -d "{{.REGISTRY_DATA_DIR}}" ]; then
+          echo "Removing registry data..."
+          rm -rf "{{.REGISTRY_DATA_DIR}}"
+          echo "Registry data removed"
+        elif [ "{{.FORCE}}" != "true" ]; then
+          echo "(data preserved in {{.REGISTRY_DATA_DIR}}, use FORCE=true to delete)"
+        fi
+
+  cleanup:
+    desc: Remove all registry data
+    summary: |
+      Stop the registry, remove the container, and delete all data.
+      WARNING: This will delete all published modules.
+    cmds:
+      - |
+        if docker ps -f name={{.REGISTRY_CONTAINER}} | grep -q {{.REGISTRY_CONTAINER}}; then
+          echo "Stopping registry..."
+          docker stop {{.REGISTRY_CONTAINER}}
+        fi
+
+        if docker ps -a -f name={{.REGISTRY_CONTAINER}} -q | grep -q .; then
+          echo "Removing registry container..."
+          docker rm -f {{.REGISTRY_CONTAINER}}
+          echo "Container removed"
+        fi
+
+        if [ -d "{{.REGISTRY_DATA_DIR}}" ]; then
+          echo "Removing registry data..."
+          rm -rf "{{.REGISTRY_DATA_DIR}}"
+          echo "All registry data removed"
+        fi

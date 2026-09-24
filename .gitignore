@@ -1,0 +1,50 @@
+# OPM workspace root: only the shared layer (CLAUDE.md, .claude/, Taskfile.yml, .tasks/) is tracked.
+
+# Child repos: each has its own remote and is tracked independently.
+# When cloning a new repo in, add it here AND as a negation in .ignore.
+/catalog_opm/
+/cli/
+/core/
+/enhancements/
+/library/
+/modules/
+/opm/
+/opm-operator/
+/opmodel.dev/
+/opm-suite-installer/
+/.github/
+
+# Personal checkouts kept beside the org repos go in .git/info/exclude (local, untracked), with
+# their ripgrep negations in .rgignore, so their names never land in this public repo.
+
+# Personal, never shared
+/CLAUDE.local.md
+/.rgignore
+.claude/settings.local.json
+/tasks.md
+/claude-stuff/
+/*.code-workspace
+
+# Local OCI registry data and caches
+.registry-data
+.external_repos
+.cue-cache
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+old_stuff
+
+# Temporary files
+*.tmp
+*.swp
+*~
+
+# Environment files
+.env
+.env.local
+.env.*.local

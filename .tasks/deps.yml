@@ -1,0 +1,19 @@
+version: "3"
+
+# Dependency pins that live OUTSIDE cue.mod/module.cue, where `deps:update`
+# cannot see them. Run from the workspace root.
+tasks:
+  platform-pins:
+    desc: "Bump the versions pinned by Platform definitions outside a cue.mod file (opm-operator sample Platform, the cli seeded-platform Go pins DefaultCorePin/DefaultCatalogPins in internal/config/templates.go, library parity platform) to catalog_opm's and core's newest release tags"
+    cmds:
+      - .tasks/deps/platform-pins.sh
+
+  opm-cli:
+    desc: "Bump the opm CLI release CI installs in catalog_opm, modules and opm-operator workflows (core has none). VERSION=vX.Y.Z overrides cli's newest tag"
+    cmds:
+      - .tasks/deps/opm-cli.sh {{.VERSION}}
+
+  fixtures:
+    desc: "Bump the CUE deps of the published test fixtures (cli/tests/fixtures, opm-operator/test/fixtures), advance each changed fixture's declared version and re-pin every consumer (operator modulepackages, moduleinstance/sample manifests, cli operator-owned/examples cue.mod) in one pass; one PR per repo, PR CI seeds its registry from the tree"
+    cmds:
+      - .tasks/deps/fixtures.sh
