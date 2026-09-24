@@ -45,4 +45,6 @@ Start Claude Code at the workspace root. `AGENTS.md` and `.claude/` load automat
   }
   ```
 
-  The script needs `rg` ([ripgrep](https://github.com/BurntSushi/ripgrep)).
+  The script uses `rg` ([ripgrep](https://github.com/BurntSushi/ripgrep)) when it is installed and
+  otherwise falls back to the ripgrep bundled in the `claude` binary. It suggests folders as well as
+  files, shallowest first, so an empty `@` lists the top-level repos.
