@@ -195,11 +195,9 @@ missing org repo.
 
 Other root entries: `STYLE.md` (workspace prose/Markdown style guide that repo `docs/STYLE.md`
 files extend), `.claude/` (shared agents, commands, skills), `.tasks/` (root Taskfile includes),
-`README.md` (onboarding). Gitignored and personal: `AGENTS.local.md` (routing for personal
-checkouts kept beside the org repos, imported below when present), `.claude/settings.local.json`,
-`*.code-workspace`, `tasks.md`, `claude-stuff/` (scratch, ignore).
-
-@AGENTS.local.md
+`README.md` (onboarding). Gitignored and personal: `CLAUDE.local.md` (routing for personal
+checkouts kept beside the org repos; Claude Code loads it natively beside `AGENTS.md`),
+`.claude/settings.local.json`, `*.code-workspace`, `tasks.md`, `claude-stuff/` (scratch, ignore).
 
 ### Not checked out
 

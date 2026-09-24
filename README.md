@@ -27,7 +27,7 @@ Every OPM module resolves anonymously from GHCR; no local registry is needed. St
 Start Claude Code at the workspace root. `AGENTS.md` and `.claude/` load automatically.
 
 - **Personal settings** go in `.claude/settings.local.json` and personal routing in
-  `AGENTS.local.md`. Both are gitignored.
+  `CLAUDE.local.md`. Both are gitignored.
 - **Search across repos**: `.gitignore` hides the child repos from git, and `.ignore` re-exposes
   them to ripgrep, so Grep and Glob at the root still search every checkout. When you clone a new
   repo in, add it to both files.
