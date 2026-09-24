@@ -4,7 +4,7 @@ version: '3'
 #
 # Manages the persistent Docker-based OCI registry for local development.
 #
-# Registry Policy (root CLAUDE.md): nothing REQUIRES this registry by default —
+# Registry Policy (root AGENTS.md): nothing REQUIRES this registry by default —
 # both opmodel.dev/* and testing.opmodel.dev/* resolve from ghcr.io/open-platform-model.
 # Start it only for:
 #   - local iteration on a testing.opmodel.dev/* fixture before it is published,

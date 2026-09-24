@@ -17,7 +17,7 @@ vars:
   REGISTRY_DATA_DIR: '{{.ROOT_DIR}}/.registry-data'
 
   # CUE_REGISTRY prefix mapping for tasks that deliberately opt into the local
-  # registry. Per the Registry Policy (root CLAUDE.md) both opmodel.dev/* and
+  # registry. Per the Registry Policy (root AGENTS.md) both opmodel.dev/* and
   # testing.opmodel.dev/* resolve from GHCR by default; this is the override, used
   # for local iteration and for the gated local-publish exception.
   LOCAL_REGISTRY: testing.opmodel.dev=localhost:5000+insecure

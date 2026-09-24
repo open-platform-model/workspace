@@ -1,7 +1,7 @@
 # Open Platform Model workspace
 
 The shared layer for working on [Open Platform Model](https://opmodel.dev) across all its repos at
-once: agent instructions (`CLAUDE.md`, `.claude/`), the workspace `Taskfile.yml` and `.tasks/`,
+once: agent instructions (`AGENTS.md`, `.claude/`), the workspace `Taskfile.yml` and `.tasks/`,
 and the prose style guide (`STYLE.md`). Each OPM repo is cloned beside these files as its own git
 checkout and is gitignored here.
 
@@ -20,14 +20,14 @@ task --list
 ```
 
 Every OPM module resolves anonymously from GHCR; no local registry is needed. Start with
-`CLAUDE.md`: it routes each kind of task to the right repo.
+`AGENTS.md`: it routes each kind of task to the right repo.
 
 ## Claude Code
 
-Start Claude Code at the workspace root. `CLAUDE.md` and `.claude/` load automatically.
+Start Claude Code at the workspace root. `AGENTS.md` and `.claude/` load automatically.
 
 - **Personal settings** go in `.claude/settings.local.json` and personal routing in
-  `CLAUDE.local.md`. Both are gitignored.
+  `AGENTS.local.md`. Both are gitignored.
 - **Search across repos**: `.gitignore` hides the child repos from git, and `.ignore` re-exposes
   them to ripgrep, so Grep and Glob at the root still search every checkout. When you clone a new
   repo in, add it to both files.

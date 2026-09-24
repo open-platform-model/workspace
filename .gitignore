@@ -1,4 +1,4 @@
-# OPM workspace root: only the shared layer (CLAUDE.md, .claude/, Taskfile.yml, .tasks/) is tracked.
+# OPM workspace root: only the shared layer (AGENTS.md, .claude/, Taskfile.yml, .tasks/) is tracked.
 
 # Child repos: each has its own remote and is tracked independently.
 # When cloning a new repo in, add it here AND as a negation in .ignore.
@@ -18,7 +18,7 @@
 # their ripgrep negations in .rgignore, so their names never land in this public repo.
 
 # Personal, never shared
-/CLAUDE.local.md
+/AGENTS.local.md
 /.rgignore
 .claude/settings.local.json
 /tasks.md

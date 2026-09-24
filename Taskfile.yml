@@ -3,7 +3,7 @@ version: "3"
 silent: true
 
 env:
-  # Canonical mapping (Registry Policy, root CLAUDE.md): every OPM domain
+  # Canonical mapping (Registry Policy, root AGENTS.md): every OPM domain
   # resolves from GHCR — opmodel.dev for published artifacts, testing.opmodel.dev
   # for the fixture/experiment namespace. Routing either to the local registry is
   # a deliberate per-task override, not the default. A CUE_REGISTRY already
