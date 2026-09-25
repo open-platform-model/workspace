@@ -73,7 +73,7 @@ Use the following blockquote prefix format for callouts:
 - `Warning`: potential pitfall or destructive action.
 - `Tip`: shortcut or best practice.
 
-Do not use HTML `<details>` or Hugo/Docsy shortcodes in repo-local docs (only in `opmodel.dev/` Hugo content).
+Do not use HTML `<details>` or Starlight components in repo-local docs; they belong only in `opmodel.dev/` site content.
 
 ## Terminology and Capitalization
 

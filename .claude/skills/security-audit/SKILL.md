@@ -8,7 +8,7 @@ argument-hint: "[repo | path | feature | all]"
 Perform a security audit of the codebase. Reports findings ranked by severity — never modifies code.
 
 This is the **architecture-generic fallback** audit. The workspace spans many stacks (pure CUE
-schema, Go libraries, a Go CLI, a Go/HTMX web app, a Hugo site, Kubernetes/IaC, encrypted configs),
+schema, Go libraries, a Go CLI, a Go/HTMX web app, an Astro site, Kubernetes/IaC, encrypted configs),
 so this skill reasons from security *principles* and adapts to whatever is in scope rather than
 assuming one architecture.
 
