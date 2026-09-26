@@ -73,7 +73,7 @@ Use the following blockquote prefix format for callouts:
 - `Warning`: potential pitfall or destructive action.
 - `Tip`: shortcut or best practice.
 
-Do not use HTML `<details>` or Starlight components in repo-local docs; they belong only in `opmodel.dev/` site content.
+Do not use HTML `<details>` or Starlight components in repo-local docs. They belong only in site pages: `opmodel.dev/` site content and each repository's `docs/site/`, which the site assembles.
 
 ## Terminology and Capitalization
 
@@ -87,7 +87,7 @@ Do not use HTML `<details>` or Starlight components in repo-local docs; they bel
 
 ## Glossary
 
-The canonical glossary is `opm/docs/glossary.md`. When a doc uses a term defined there, link to the glossary on first use per document. From any other repo, link it by GitHub URL (see Cross-Repo Links); inside `opm/`, link it relatively.
+The canonical glossary is `opm/docs/legacy/glossary.md` until the site glossary, `opm/docs/site/reference/glossary.md`, replaces it. When a doc uses a term defined there, link to the glossary on first use per document. From any other repo, link it by GitHub URL (see Cross-Repo Links); inside `opm/`, link it relatively.
 
 ## Tables
 
@@ -99,7 +99,7 @@ The canonical glossary is `opm/docs/glossary.md`. When a doc uses a term defined
 
 - Each repo is a separate git repository. A path that climbs out of the repo (`../opm/...`) only resolves in a workspace checkout that happens to have the sibling cloned next to it; it is broken on GitHub and in the published docs. Never use one.
 - Link to another repo's file with its GitHub URL on `main`.
-- Example: `[Glossary](https://github.com/open-platform-model/opm/blob/main/docs/glossary.md)`
+- Example: `[Glossary](https://github.com/open-platform-model/opm/blob/main/docs/legacy/glossary.md)`
 
 ## Writing Tone (Universal)
 
