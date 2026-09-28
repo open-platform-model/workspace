@@ -142,6 +142,9 @@ tasks:
                 printf "    %s: \033[2m%s (unchanged)\033[0m\n" "$dep" "$old_ver"
               fi
             done
+            # A bump can add or drop requirements; the template publish gate
+            # refuses a template that is not tidy (cli publish-templates.sh).
+            cue mod tidy
           )
         done
         printf "Done.\n"
