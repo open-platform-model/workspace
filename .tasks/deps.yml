@@ -4,7 +4,7 @@ version: "3"
 # cannot see them. Run from the workspace root.
 tasks:
   platform-pins:
-    desc: "Bump the versions pinned by Platform definitions outside a cue.mod file (opm-operator sample Platform, the cli seeded-platform Go pins DefaultCorePin/DefaultCatalogPins in internal/config/templates.go, library parity platform) to catalog_opm's and core's newest release tags"
+    desc: "Bump the catalog versions pinned by Platform definitions outside a cue.mod file (opm-operator sample Platform, cli/hack/kind-platform.yaml, which mirrors cli/hack/platform/) to catalog_opm's newest release tags"
     cmds:
       - .tasks/deps/platform-pins.sh
 

@@ -54,7 +54,7 @@ includes:
 
 tasks:
   deps:update:
-    desc: "Update CUE deps to latest across catalog_opm/cli/core/opm-operator/modules/opm-modules cue.mod files (fixture trees and .claude worktrees excluded; includes cli/hack/platform), the CLI templates, and the Platform pins outside a cue.mod file (operator sample Platform, the cli seeded-platform Go pins in internal/config/templates.go). Not covered: published fixtures (task deps:pins:fixtures), the CI opm pin (task deps:pins:opm-cli), Go deps (Dependabot)"
+    desc: "Update CUE deps to latest across catalog_opm/cli/core/opm-operator/modules/opm-modules cue.mod files (fixture trees and .claude worktrees excluded; includes cli/hack/platform), the CLI templates, and the Platform pins outside a cue.mod file (operator sample Platform, cli/hack/kind-platform.yaml). Not covered: published fixtures (task deps:pins:fixtures), the CI opm pin (task deps:pins:opm-cli), Go deps (Dependabot)"
     cmds:
       - task: deps:update:modules
       - task: deps:update:templates
