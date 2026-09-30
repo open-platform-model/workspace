@@ -216,6 +216,19 @@ patch-only v1 maintenance line on the `v1` branch (`modules` also has a frozen `
 "Branch model" section stating what may land there. Never merge `main` into a maintenance branch.
 Releases are release-please-owned; never tag or publish by hand.
 
+### Pushing
+
+Push with `git push --force-with-lease origin <branch>`; it is the allowed push command. The
+lease refuses when the remote moved since your last fetch, so it never overwrites someone else's
+push.
+
+- **On `main` (and `master`), never force-push, lease or not.** Use a plain `git push origin
+  main`, which only fast-forwards. When `main` has diverged from its remote, the human starts the
+  integration (`git pull --rebase`); an agent may finish a rebase already in progress
+  (`git rebase --continue`) but never starts one on `main`.
+- **Never `--force` / `-f`, and never `git commit --amend`.** Make a new commit instead: HEAD may
+  have moved under you since your last commit.
+
 ## Routing
 
 | Task mentions | Repo |
