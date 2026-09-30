@@ -210,8 +210,10 @@ OpenSpec archives are historical records, not broken links. Re-clone only for a 
 
 ## Branch Model
 
-`core`, `catalog_opm` and `modules` carry a v2 development line on `main` and a protected,
+`core`, `catalog_opm` and `modules` carry the OPM v2 generation on `main` and a protected,
 patch-only v1 maintenance line on the `v1` branch (`modules` also has a frozen `v0_legacy`).
+In `catalog_opm`, `main` ships the stable `opmodel.dev/catalogs/opm@v4` line and the prerelease
+`opmodel.dev/catalogs/k8s@v1` line; its `v1` branch is the retired v1 line of the opm catalog.
 **Check which branch you are on before editing**; each long-lived branch's `AGENTS.md` has a
 "Branch model" section stating what may land there. Never merge `main` into a maintenance branch.
 Releases are release-please-owned; never tag or publish by hand.
@@ -235,7 +237,7 @@ push.
 | --- | --- |
 | Core schema (`#Module`, `#Component`, `#Resource`, `#Trait`, `#Blueprint`, `#Platform`, `#ModuleInstance`, `#ComponentTransformer`); "schema change" | `core/` (`catalog_opm/` only if it is a catalog primitive built on top) |
 | Kernel, loader, validator, matcher, transformer execution, compile pipeline | `library/` |
-| Catalog resources/traits/blueprints/transformers, `k8s-*` passthrough, CUE catalog conventions | `catalog_opm/` |
+| Catalog resources/traits/blueprints/transformers, raw Kubernetes catalog (`opmodel.dev/catalogs/k8s@v1`), CUE catalog conventions | `catalog_opm/` |
 | CLI commands, workflow runner, publishing, registry-facing CLI behavior | `cli/` |
 | Controller, CRDs, operator runtime | `opm-operator/` |
 | Internal specs, architecture docs, benchmarks; "update spec for X" | `opm/` |
