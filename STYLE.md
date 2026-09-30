@@ -27,7 +27,7 @@ Per-repo rules extend and may override these universal rules. Where no per-repo 
 - Leave one blank line before and after every blockquote or admonition.
 - End files with a single newline character (no trailing blank lines).
 - Use reference-style links only when the same URL appears three or more times in a file.
-- Use relative links between files in the same repo. Cross-repo links use absolute GitHub URLs (see Cross-Repo Links).
+- Use relative links between files in the same repo. Cross-repo links use absolute GitHub URLs (see Cross-Repo Links). Site pages link differently (see Site Pages).
 
 ## Heading Hierarchy
 
@@ -93,6 +93,10 @@ Site pages are the `opmodel.dev/` site content and every page under a repository
 - **Order is `weight`.** A page's place in its section comes from the optional front-matter key `weight: N`, a positive integer: lower first, then title. Never write a `sidebar:` block.
 - **A section page is `_index.md`**, never `index.md`: Hugo reads `index.md` as a leaf bundle that swallows its siblings. A section page declares no `type`.
 - **No MDX.** Pages are `.md` files: no `.mdx`, no `import ... from` lines and no component tags such as `<ModuleToCluster />`.
+- **Front matter allows four keys.** `title` and `description` (one line) are required on every page. `type` (`tutorial`, `how-to`, `explanation` or `reference`) is required on a leaf page. `weight` is optional. Every other key is forbidden, including `sidebar`, `slug`, `draft` and `aliases`.
+- **Links are root-absolute with a trailing slash**, and this replaces the relative-link rule above: `[What OPM is](/docs/start/what-is-opm/)`, with an optional `#fragment`. Never write relative links, `.md` links, version-prefixed links (`/v1.0/docs/...`) or raw `href=`/`src=` attributes. The site build fails on a link to a missing page.
+- **No images.** Figures are drawn in the site engine (0018:D14); write no `![...]` and no `<img>`.
+- **Every code fence carries a language tag**; use `text` for plain text.
 
 github.com renders the alerts but shows each `{{< opm/... >}}` shortcode as literal text. This trade-off is accepted: the figures render on the site.
 
