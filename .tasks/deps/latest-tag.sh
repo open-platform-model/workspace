@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Print the newest release tag of a workspace repo matching a prefix, read from
 # GitHub (no registry tooling, no auth): `latest-tag.sh <repo> <prefix>`.
-# Prereleases count (the v2 line ships alphas); `-0.dev.` branch builds do not.
+# Prereleases count (the v2 line ships alpha, then beta, then GA); `-0.dev.`
+# branch builds do not.
 # The version is echoed WITHOUT the prefix and without a leading `v`.
 set -euo pipefail
 repo="$1"; prefix="$2"

@@ -9,7 +9,7 @@ tasks:
       - .tasks/deps/platform-pins.sh
 
   opm-cli:
-    desc: "Bump the opm CLI release CI installs in catalog_opm, modules and opm-operator workflows (core has none). VERSION=vX.Y.Z overrides cli's newest tag"
+    desc: "Bump the opm CLI release CI installs in catalog_opm, modules, opm-operator and (when checked out) opm-modules workflows (core has none). VERSION=vX.Y.Z overrides cli's newest tag"
     cmds:
       - .tasks/deps/opm-cli.sh {{.VERSION}}
 
