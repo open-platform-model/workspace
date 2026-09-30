@@ -21,7 +21,7 @@ This command runs at the workspace root, which has **no OpenSpec skills of its o
 
    Only repos with a `<repo>/openspec/` directory **and** a `<repo>/.claude/skills/openspec-sync-specs/SKILL.md` qualify. Discover these from the filesystem on every run; do not hardcode the list. A repo with an `openspec/` directory but no skill is not a valid target: say so and stop.
 
-   Some repos run a project-local no-specs schema (`openspec/config.yaml` `schema:` other than `spec-driven`, e.g. `catalog_opm`'s `catalog-change`, `modules`' `module-change`): they have no `openspec/specs/`, every change declares `skip_specs: true`, and `openspec-sync-specs` is deliberately deleted. Sync is not a step in their workflow. Tell the user the repo's schema has no specs artifact and point them at `/opsx:archive` instead; never create a `specs/` directory to make sync possible.
+   Some repos run a project-local no-specs schema (`openspec/config.yaml` `schema:` other than `spec-driven`, e.g. `catalog_opm`'s `catalog-change`, `modules`' `module-change`, `opmodel.dev`'s `docs-site-change`): they have no `openspec/specs/`, every change declares `skip_specs: true`, and `openspec-sync-specs` is deliberately deleted. Sync is not a step in their workflow. Tell the user the repo's schema has no specs artifact and point them at `/opsx:archive` instead; never create a `specs/` directory to make sync possible.
 
 2. **Enter the repo.** Work from `<repo>/` as the working directory, so `openspec` CLI calls and relative paths resolve against that repo's `openspec/`. Read the repo's `AGENTS.md` (and `CONSTITUTION.md` / `openspec/config.yaml` where present) and check the branch against the Branch Model before proceeding.
 
