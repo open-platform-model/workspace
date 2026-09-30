@@ -114,7 +114,7 @@ export OPM_REGISTRY="$CUE_REGISTRY"
 **The module path decides the registry**; CUE longest-prefix routing enforces it mechanically.
 The owned-prefix layout (`core`, `catalogs/<name>`, `modules/<name>`, `templates/<name>` published
 only by the cli release pipeline, `platforms` reserved) is documented at
-`opmodel.dev/site/content/docs/reference/registry-namespaces.md`.
+`cli/docs/site/reference/registry-namespaces.md`.
 
 1. **Reads:** `opmodel.dev/*` and `testing.opmodel.dev/*` both resolve from GHCR
    (`ghcr.io/open-platform-model`, public, anonymous pulls). No local registry is needed for

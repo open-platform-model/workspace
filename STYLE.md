@@ -61,7 +61,7 @@ Per-repo rules extend and may override these universal rules. Where no per-repo 
 
 ## Admonitions
 
-Use the following blockquote prefix format for callouts:
+Repo-local docs use the following blockquote prefix format for callouts:
 
 ```
 > **Note:** ...
@@ -73,7 +73,28 @@ Use the following blockquote prefix format for callouts:
 - `Warning`: potential pitfall or destructive action.
 - `Tip`: shortcut or best practice.
 
-Do not use HTML `<details>` or Starlight components in repo-local docs. They belong only in site pages: `opmodel.dev/` site content and each repository's `docs/site/`, which the site assembles.
+Do not use HTML `<details>` or Hugo shortcodes in repo-local docs. They belong only in site pages: `opmodel.dev/` site content and each repository's `docs/site/`, which the site assembles. Site pages write callouts as GitHub alerts instead (see Site Pages).
+
+## Site Pages
+
+Site pages are the `opmodel.dev/` site content and every page under a repository's `docs/site/`. They follow these rules in place of the repo-local forms above.
+
+- **Callouts are GitHub alerts.** The marker stands alone on its line and is one of `NOTE`, `TIP`, `IMPORTANT`, `WARNING` or `CAUTION`. A title is a bold first line, followed by an empty quote line:
+
+  ```markdown
+  > [!NOTE]
+  > **Deploying your own module**
+  >
+  > Body text, which may hold several paragraphs, lists and code.
+  ```
+
+  Never write `> [!NOTE] Title`, a foldable `> [!NOTE]-`, or a Starlight `:::note[...]` block.
+- **Figures are `{{< opm/<name> >}}` shortcodes.** Write each on its own line, with a blank line before and after, no parameters and no closing tag. The six names are `module-to-cluster`, `roles-and-artifacts`, `component-to-objects`, `where-things-live`, `three-ways-to-deploy` and `helm-and-opm`. No other shortcode appears in a `docs/site/` page. Hugo expands shortcodes even inside code fences, so to show one in a code block, write `{{</* opm/<name> */>}}`.
+- **Order is `weight`.** A page's place in its section comes from the optional front-matter key `weight: N`, a positive integer: lower first, then title. Never write a `sidebar:` block.
+- **A section page is `_index.md`**, never `index.md`: Hugo reads `index.md` as a leaf bundle that swallows its siblings. A section page declares no `type`.
+- **No MDX.** Pages are `.md` files: no `.mdx`, no `import ... from` lines and no component tags such as `<ModuleToCluster />`.
+
+github.com renders the alerts but shows each `{{< opm/... >}}` shortcode as literal text. This trade-off is accepted: the figures render on the site.
 
 ## Terminology and Capitalization
 

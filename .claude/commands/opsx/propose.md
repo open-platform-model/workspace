@@ -23,7 +23,7 @@ This command runs at the workspace root, which has **no OpenSpec skills of its o
 
 2. **Enter the repo.** Work from `<repo>/` as the working directory, so `openspec` CLI calls and relative paths resolve against that repo's `openspec/`. Read the repo's `AGENTS.md` (and `CONSTITUTION.md` / `openspec/config.yaml` where present) and check the branch against the Branch Model before proceeding.
 
-3. **Execute the repo-local skill.** Read `<repo>/.claude/skills/openspec-propose/SKILL.md` and follow it exactly as if it had been invoked, passing along the remaining arguments (the change name or description). The root Skill tool cannot see repo-local skills, so load the file directly. Repos whose skill carries `REPO-LOCAL PATCH` blocks (`catalog_opm`, `modules`) add mandatory steps there; honour them.
+3. **Execute the repo-local skill.** Read `<repo>/.claude/skills/openspec-propose/SKILL.md` and follow it exactly as if it had been invoked, passing along the remaining arguments (the change name or description). The root Skill tool cannot see repo-local skills, so load the file directly. Repos whose skill carries `REPO-LOCAL PATCH` blocks (`catalog_opm`, `modules`, `opmodel.dev`) add mandatory steps there; honour them.
 
 4. **State which repo and skill ran** at the start of your reply (`Repo: core, skill: openspec-propose`).
 
