@@ -32,14 +32,25 @@ type decides whether a release happens:
 The type follows **what ships**, not what kind of edit it was:
 
 - A dependency or pin bump that changes a shipped artifact (`go.mod`, the `cue.mod` of a published
-  module or catalog, `cli/templates/*`, the CLI seeded-platform pins (`DefaultCorePin`,
-  `DefaultCatalogPins`) in `cli/internal/config/templates.go`) is `fix(deps): ...` (Dependabot's `deps: ...` is equivalent).
+  module or catalog, `cli/templates/*`) is `fix(deps): ...` (Dependabot's `deps: ...` is
+  equivalent).
 - A bump that touches only test fixtures, samples, examples or the dev harness
   (`test/fixtures/*`, `tests/fixtures/*`, `config/samples/*`, `hack/*`, `examples/*`, `testdata/*`)
   is `test(fixtures): ...`.
 - Never use `chore` for a bump, and never mix a shipped bump and a fixture bump in one commit.
 
 Escape hatch: a `Release-As: x.y.z` footer forces a release from an otherwise hidden commit.
+
+### Moving a prerelease line (alpha to beta, or to GA)
+
+- Flipping `prerelease-type` / `prerelease` in `release-please-config.json` is required but does
+  nothing alone: the next release still counts on the old line.
+- The version crosses only through a one-shot `Release-As: X.Y.Z` footer (e.g.
+  `Release-As: 1.0.0-beta.1`) in the **final** commit message on `main`. For a squash merge that
+  is the squash message, not an inner commit.
+- Never put `release-as` in `release-please-config.json`: it pins every later release too.
+- In a multi-package repo the footer applies to every package whose paths the commit touches.
+  Keep the carrier commit inside the one package that should move.
 
 - Scope is optional but encouraged when it clarifies the change.
 - Description must be lowercase, imperative mood, no period at the end.
