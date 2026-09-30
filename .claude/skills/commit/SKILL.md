@@ -41,21 +41,26 @@ The type follows **what ships**, not what kind of edit it was:
 
 Escape hatch: a `Release-As: x.y.z` footer forces a release from an otherwise hidden commit.
 
-### Moving a prerelease line (alpha to beta, or to GA)
+- Scope is optional but encouraged when it clarifies the change.
+- Description must be lowercase, imperative mood, no period at the end.
+- Keep the first line under 72 characters.
+- The subject line should be sufficient. A body is only warranted for genuinely unusual cases, e.g., a non-obvious breaking change, a subtle reason the diff doesn't speak for itself, or context that would otherwise be lost. Default: no body.
 
-- Flipping `prerelease-type` / `prerelease` in `release-please-config.json` is required but does
-  nothing alone: the next release still counts on the old line.
+### Moving a prerelease line (alpha to beta)
+
+- Flipping `prerelease-type` in `release-please-config.json` is required but does nothing alone:
+  the next release still counts on the old line.
 - The version crosses only through a one-shot `Release-As: X.Y.Z` footer (e.g.
   `Release-As: 1.0.0-beta.1`) in the **final** commit message on `main`. For a squash merge that
   is the squash message, not an inner commit.
 - Never put `release-as` in `release-please-config.json`: it pins every later release too.
 - In a multi-package repo the footer applies to every package whose paths the commit touches.
   Keep the carrier commit inside the one package that should move.
-
-- Scope is optional but encouraged when it clarifies the change.
-- Description must be lowercase, imperative mood, no period at the end.
-- Keep the first line under 72 characters.
-- The subject line should be sufficient. A body is only warranted for genuinely unusual cases, e.g., a non-obvious breaking change, a subtle reason the diff doesn't speak for itself, or context that would otherwise be lost. Default: no body.
+- No body line may start with an identifier followed by `(` (e.g. `word(`): release-please drops
+  the whole commit, footer included.
+- GA: set `prerelease: false`. The next releasable commit that touches the package drops the
+  suffix (`X.Y.Z-beta.N` to `X.Y.Z`) with no `Release-As`. A hidden-only flip (`chore`) opens no
+  release PR, so each package needs a visible carrier commit, in dependency order.
 
 ## Message Content
 
