@@ -66,8 +66,8 @@ tasks:
     cmds:
       - |
         # library/ is excluded on purpose: it owns `task cue:deps:update`.
-        # opm-modules publishes on push to main: a fix(deps) commit there releases
-        # every module, which is the point of bumping a fleet.
+        # A fix(deps) commit in modules or opm-modules opens a release PR for every
+        # bumped module; each one publishes when that PR merges (identity advance).
         # .claude/worktrees are other checkouts of the same repo: never touched here.
         find catalog_opm cli core opm-operator modules opm-modules -name "cue.mod" -type d \
           -not -path '*/.build/*' -not -path '*/.claude/*' -not -path '*/testdata/*' -not -path '*/test/fixtures/*' -not -path '*/tests/fixtures/*' 2>/dev/null \
