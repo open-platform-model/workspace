@@ -38,6 +38,11 @@ The type follows **what ships**, not what kind of edit it was:
   (`test/fixtures/*`, `tests/fixtures/*`, `config/samples/*`, `hack/*`, `examples/*`, `testdata/*`)
   is `test(fixtures): ...`.
 - Never use `chore` for a bump, and never mix a shipped bump and a fixture bump in one commit.
+  One exception: in a `deps-cascade` PR (the rolling `deps/cascade` bot PR), the shipped bump and
+  the test or fixture edits it forces squash together as one `fix(deps)` commit. The rule holds
+  everywhere else. See the workspace `RELEASING.md`, "Bump rule".
+- An opm CLI pin bump (`.opm-cli-version`, or a CI workflow literal) is `ci(deps): ...`: a
+  release tool, never shipped.
 
 Escape hatch: a `Release-As: x.y.z` footer forces a release from an otherwise hidden commit.
 
