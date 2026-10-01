@@ -170,10 +170,15 @@ except where noted, and the org owner administers them in the browser.
   `opm-operator` and `release-flow-sandbox`. Immutable releases on `core`, `library` and
   `catalog_opm`, and also, **ahead of plan**, on `cli` and `opm-operator`, until the org owner
   narrows the org policy to the target list above.
-- **Release-PR hold:** while immutable releases are on for `cli` or `opm-operator` and that repo
-  has not shipped its draft-first release flow, **nobody, human or agent, merges a release PR in
-  that repo.** Its release would publish immutable before its assets are attached, and that
-  version could never be repaired. This overrides the general permission to merge release PRs.
+- **Release-PR hold (`cli`, `opm-operator`):** **until the owner narrows the org policy so
+  immutable releases are off for that repo, nobody, human or agent, merges a release PR there.**
+  Its release would publish immutable before its assets are attached, and that version could
+  never be repaired. Once they are off there, a release PR is merged only to produce the repo's
+  first draft-first release (its draft-first flow already on `main`). The hold lifts for a repo
+  only when both are true: (a) one real draft-first release there has been verified (published
+  from its draft by the release workflow, every asset attached); (b) after that, the owner has
+  re-enabled immutable releases for that repo. Merging the code of the draft-first flow lifts
+  nothing. This overrides the general permission to merge release PRs.
 - **Pending:** `tags-create-app-only` (App-only tag creation), the `release-branches` ruleset
   (the stale `catalog_opm` branch `release/opm-stable` is deleted first), and immutable releases
   on `release-flow-sandbox`.
