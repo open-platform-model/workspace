@@ -68,14 +68,15 @@ In the releasing repos (`core`, `library`, `catalog_opm`, `cli`, `opm-operator`;
 now), a tag under `refs/tags/` is never moved, deleted or re-created, by anyone. The full rule
 is "Release Tags Are Immutable" in the workspace `AGENTS.md`.
 
-- Release-please creates tags. Never tag by hand, and never `git tag -f` / `-d` or force-push or
-  delete a tag; the tracked hook blocks these.
+- Release-please, running as the `opm-release-please` App, creates every tag; the org refuses tag
+  creation by anyone else. Never tag by hand, and never `git tag -f` / `-d` or force-push or
+  delete a tag; the tracked hook blocks these in the in-scope repos.
 - A commit that landed in the wrong release is not fixed by re-tagging. Land the fix as a
   releasable commit (`fix(...)`) so release-please cuts the next version. A Go module adds a
   `retract` for the bad version; a CUE/OCI artifact publishes the next version.
-- A docs fix for a released version is a commit on its `docs/vX.Y` branch (created from the
-  release tag on first need) plus a pin bump in `opmodel.dev` `site/versions.conf`, never a
-  re-tag.
+- A backport or a docs fix for a released minor is a PR into its `release/<tag-prefix>vX.Y`
+  branch (cut by the automated action, never by hand; none during beta). A docs-only fix in
+  `core` or `catalog_opm` cuts no release; `opmodel.dev` pins its commit SHA.
 
 ## Message Content
 

@@ -8,20 +8,44 @@ set -uo pipefail
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 hook="$here/block-tag-mutation.sh"
 
-# Scratch repo holding a local tag with a non-version name, to exercise the
-# "bare name that is a local tag" detection.
-repo="$(mktemp -d)"
-trap 'rm -rf "$repo"' EXIT
-git -C "$repo" init -q
-git -C "$repo" -c user.name=t -c user.email=t@example.invalid commit -q --allow-empty -m init
-git -C "$repo" tag snapshot-tag
+# Scratch workspace: one clone per scope case, told apart only by its remote URL.
+#   ws/core         origin https  open-platform-model/core      (in scope, default cwd)
+#   ws/cli          origin ssh    open-platform-model/cli       (in scope)
+#   ws/modules      origin        open-platform-model/modules   (excluded)
+#   ws/opm-modules  origin        emil-jacero/opm-modules       (personal, excluded)
+#   ws/fork         origin fork, upstream open-platform-model/library
+#   ws/plain        no remote                                    (unknown, passes)
+root="$(mktemp -d)"
+trap 'rm -rf "$root"' EXIT
+ws="$root/ws"
+mkrepo() {
+  local dir="$ws/$1"
+  shift
+  mkdir -p "$dir"
+  git -C "$dir" init -q
+  git -C "$dir" -c user.name=t -c user.email=t@example.invalid commit -q --allow-empty -m init
+  git -C "$dir" tag snapshot-tag
+  while [ $# -gt 0 ]; do
+    git -C "$dir" remote add "$1" "$2"
+    shift 2
+  done
+}
+mkrepo core origin https://github.com/open-platform-model/core.git
+mkrepo cli origin git@github.com:open-platform-model/cli.git
+mkrepo modules origin https://github.com/open-platform-model/modules.git
+mkrepo opm-modules origin https://github.com/emil-jacero/opm-modules.git
+mkrepo fork origin https://github.com/emil-jacero/library.git upstream https://github.com/open-platform-model/library
+mkrepo plain
+git -C "$ws/core" branch chore/bump-core-v2.0.0
+printf 'mutation { deleteRef(input:{refId:"x"}) { clientMutationId } }\n' >"$ws/core/deleteref.graphql"
 
 pass=0
 fail=0
+cwd="$ws/core"
 
 run() {
   local want="$1" cmd="$2" got
-  jq -nc --arg c "$cmd" --arg d "$repo" '{tool_name:"Bash",tool_input:{command:$c},cwd:$d}' \
+  jq -nc --arg c "$cmd" --arg d "$cwd" '{tool_name:"Bash",tool_input:{command:$c},cwd:$d}' \
     | "$hook" >/dev/null 2>&1
   case $? in
     2) got=block ;;
@@ -32,8 +56,16 @@ run() {
     pass=$((pass + 1))
   else
     fail=$((fail + 1))
-    printf 'FAIL want=%s got=%s: %s\n' "$want" "$got" "$cmd"
+    printf 'FAIL want=%s got=%s cwd=%s: %s\n' "$want" "$got" "${cwd#"$ws"/}" "$cmd"
   fi
+}
+
+# run_in DIR WANT CMD: one case with the session cwd at ws/DIR (or ws for "").
+run_in() {
+  local saved="$cwd"
+  cwd="$ws${1:+/$1}"
+  run "$2" "$3"
+  cwd="$saved"
 }
 
 # ------------------------------------------------------------- blocked: git tag
@@ -44,9 +76,9 @@ run block 'git tag -f v1.2.3 HEAD'
 run block 'git tag --force v1.2.3'
 run block 'git tag -fa v1.2.3 -m "moved"'
 run block 'git tag -am "msg" -f v1.2.3'
-run block 'git -C core tag -d v2.0.0'
+run_in '' block 'git -C core tag -d v2.0.0'
 run block 'git -c user.name=x tag -d v2.0.0'
-run block 'cd core && git tag -d v2.0.0'
+run_in '' block 'cd core && git tag -d v2.0.0'
 run block 'git status; git tag -d v2.0.0'
 run block 'false || git tag -d v2.0.0'
 run block 'git tag -l "v*" | xargs git tag -d'
@@ -106,8 +138,8 @@ run block 'gh api graphql -f query="mutation { deleteRef(input:{refId:\"x\"}) { 
 run block 'gh api graphql -F query=@m.graphql -f q2="updateRefs(input:{})"'
 run block 'gh auth refresh -h github.com -s admin:org'
 run block 'gh auth login --scopes repo,delete_repo'
-run block 'gh repo delete open-platform-model/sandbox --yes'
-run block 'curl -X DELETE -H "Authorization: token x" https://api.github.com/repos/o/r/git/refs/tags/v1.0.0'
+run block 'gh repo delete open-platform-model/release-flow-sandbox --yes'
+run block 'curl -X DELETE -H "Authorization: token x" https://api.github.com/repos/open-platform-model/core/git/refs/tags/v1.0.0'
 
 # ------------------------------------------------------------- allowed
 run allow 'git push origin main'
@@ -126,7 +158,7 @@ run allow 'git tag -a v1.0.0 -m "release -d -f"'
 run allow 'git tag -l "v*"'
 run allow 'git tag --list --sort=-v:refname'
 run allow 'git tag --contains HEAD'
-run allow 'git -C core tag -n5'
+run_in '' allow 'git -C core tag -n5'
 run allow 'git fetch --tags origin'
 run allow 'git ls-remote origin refs/tags/v1.0.0'
 run allow 'git update-ref refs/heads/scratch HEAD'
@@ -153,6 +185,90 @@ run allow 'curl -s https://api.github.com/repos/o/r/git/refs/tags/v1.0.0'
 run allow 'echo "git tag -d v1.0.0"'
 run allow 'grep -rn "git push --mirror" .'
 run allow 'ls -la && git status 2>&1 | head'
+
+# ------------------------------------------------------------- scope: in-scope targets
+run_in cli block 'git tag -d v1.0.0'
+run_in cli block 'git push origin :refs/tags/v1.0.0'
+run_in fork block 'git tag -d v1.0.0'
+run_in fork block 'git push upstream :refs/tags/v1.0.0'
+run_in fork block 'git push upstream --force v1.0.0'
+run_in plain block 'git push https://github.com/open-platform-model/cli.git :refs/tags/v1.0.0'
+run_in plain block 'git -C ../core tag -d v1.0.0'
+run_in plain block 'gh release delete v1.0.0 -R open-platform-model/opm-operator --yes'
+run_in plain block 'gh release delete v1.0.0 --repo=open-platform-model/catalog_opm --yes'
+run_in plain block 'GH_REPO=open-platform-model/library gh release delete v1.0.0 --yes'
+run_in plain block 'gh api -X DELETE repos/open-platform-model/release-flow-sandbox/git/refs/tags/v0.1.0'
+run_in plain block 'gh api -X PUT orgs/open-platform-model/rulesets/1 --input r.json'
+run_in modules block 'gh auth refresh -s admin:org'
+run block 'gh api -X DELETE "repos/{owner}/{repo}/git/refs/tags/v1.0.0"'
+
+# ------------------------------------------------------------- scope: excluded targets pass
+run_in modules allow 'git tag -d sonarr/v1.0.1'
+run_in modules allow 'git push origin :refs/tags/modules/sonarr/v1.2.3'
+run_in modules allow 'git push --force origin v1.0.0'
+run_in modules allow 'gh release delete v1.0.0 --yes'
+run_in modules allow 'git push origin --delete release/v1.0'
+run_in opm-modules allow 'git tag -d v1.0.0'
+run_in opm-modules allow 'git push --mirror origin'
+run_in plain allow 'git tag -d v1.0.0'
+run_in plain allow 'git push origin :refs/tags/v1.0.0'
+run_in plain allow 'gh api -X DELETE "repos/{owner}/{repo}/git/refs/tags/v1.0.0"'
+run_in '' allow 'git -C modules tag -d sonarr/v1.0.1'
+run_in '' allow 'git -C opm-modules push origin :refs/tags/modules/sonarr/v1.2.3'
+run_in '' allow 'cd modules && git tag -d v1.0.0'
+run_in fork allow 'git push origin --force v1.0.0'
+run allow 'git push https://github.com/emil-jacero/opm-modules.git :refs/tags/v1.0.0'
+run allow 'gh release delete v1.0.0 -R emil-jacero/opm-modules --yes'
+run allow 'gh release delete v1.0.0 -R open-platform-model/modules --yes'
+run allow 'gh api -X DELETE repos/emil-jacero/opm-modules/git/refs/tags/modules/sonarr/v1.2.3'
+run allow 'gh api -X DELETE repos/open-platform-model/modules/releases/123'
+run allow 'gh api -X PUT orgs/emil-jacero/rulesets/1 --input r.json'
+run allow 'curl -X DELETE https://api.github.com/repos/o/r/git/refs/tags/v1.0.0'
+
+# ------------------------------------------------------------- release branches
+run block 'git push origin --delete release/v1.0'
+run block 'git push -f origin release/v1.0'
+run block 'git push origin HEAD:release/v1.0'
+run block 'git push origin :refs/heads/release/opm-v4.4'
+run block 'gh api -X DELETE repos/open-platform-model/core/git/refs/heads/release/v2.0'
+run allow 'git push -u origin fix/backport-schema-default'
+run allow 'gh pr create --base release/v1.0 --title "fix: backport x" --body y'
+
+# ------------------------------------------------------------- review fixes: indirection and encoding
+run block 'TAG=v1.2.3; git push --delete origin "$TAG"'
+run block 'git push origin ":$TAG"'
+run block 'git ls-remote --tags origin | cut -f2 | xargs -n1 git push origin --delete'
+run block 'git tag -l | xargs -I{} git push origin :{}'
+run block 'git push origin --delete $(git tag -l "v*")'
+run block "echo 'git tag -d v1.2.3' | bash"
+run block "printf 'git push origin :refs/tags/v1.2.3\\n' | sh"
+run block $'cat <<\'EOF\' | /bin/bash\ngit tag -d v1.2.3\nEOF'
+run block "bash <<< 'git tag -d v1.2.3'"
+run block $'echo "<<X"\ngit tag -d v1.2.3'
+run block "git -c alias.zap='tag -d' zap v1.2.3"
+run block "git -c alias.p='push --force' p origin v1.2.3"
+run block 'git -c remote.origin.mirror=true push origin'
+run block 'gh api -X DELETE repos/open-platform-model/core/git/refs/%74ags/v1.2.3'
+run block 'gh api -X DELETE repos/open-platform-model/core/%72eleases/123'
+run block 'curl -sSfX DELETE https://api.github.com/repos/open-platform-model/core/git/refs/tags/v1.2.3'
+run block 'wget --method=DELETE https://api.github.com/repos/open-platform-model/cli/releases/1'
+run block "gh api graphql -f query='mutation { deleteRepositoryRuleset(input:{repositoryRulesetId:\"x\"}) { clientMutationId } }'"
+run block 'gh api graphql -F query=@deleteref.graphql'
+run block 'gh api graphql -F query=@missing.graphql'
+run block 'gh api graphql -f query="$Q"'
+run block 'gh release edit v1.0.0 --draft'
+run block 'gh release edit v1.0.0 --draft=true'
+
+# ------------------------------------------------------------- review fixes: false positives
+run allow "grep -n '\`git tag -f\` / \`-d\`' AGENTS.md"
+run allow "git commit -m 'docs: forbid \`git tag -d v1.2.3\` in agent shells'"
+run allow "gh pr comment 3 --body 'The hook now blocks \`gh release delete v1.2.3\`.'"
+run allow "git commit -m 'explain: never run \$(git tag -d v1.2.3)'"
+run allow 'git push --force-with-lease origin chore/bump-core-v2.0.0'
+run allow 'gh api -X POST repos/open-platform-model/cli/releases/generate-notes -f tag_name=v1.0.1'
+run allow "gh api graphql -f query='query(\$o: String!) { repository(owner: \$o, name: \"cli\") { id } }' -f o=x"
+run allow 'git push --force-with-lease origin "$BRANCH"'
+run_in plain allow 'gh api graphql -f query="$Q"'
 
 total=$((pass + fail))
 echo "block-tag-mutation: $pass/$total passed, $fail failed"

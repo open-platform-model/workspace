@@ -102,17 +102,20 @@ Why: the docs system pins a git ref per site version, and every consumer pins a 
 moves silently changes what a pinned version means.
 
 **Scope.** The `open-platform-model` repos that release: `core`, `library`, `catalog_opm`, `cli`,
-`opm-operator`. The `docs/*` branch rule below also covers `opm` (docs source, no releases).
-`modules` is excluded for now. The personal `emil-jacero/opm-modules` repo is out of scope and
-stays as it is.
+`opm-operator` (plus `release-flow-sandbox`, where the release flow is tested). `modules` is
+excluded for now. The personal `emil-jacero/opm-modules` repo is out of scope and stays as it is.
 
 - **Never:** `git tag -f` / `-d`, `git update-ref refs/tags/...`, a push that deletes or
   force-updates a tag (`:tag`, `+tag`, `--delete`, `--force` with a tag or `--tags`, `--mirror`,
-  `--prune`), `gh release delete`, `gh release edit --tag/--target`, `gh release upload --clobber`
-  on a published release, or an API write to `git/refs/tags`, `releases`, `rulesets` or
-  `immutable-releases`. Never request `admin:org` or `delete_repo` for the agent token.
-- **Allowed:** creating a new tag (`git tag vX`, pushing a new tag without force), reading
-  tags and releases, and everything the release workflow does to a **draft** release.
+  `--prune`), `gh release delete`, `gh release edit --tag/--target/--draft`,
+  `gh release upload --clobber` on a published release, or an API write to `git/refs/tags`,
+  `releases`, `rulesets` or `immutable-releases`. Never request `admin:org` or `delete_repo` for
+  the agent token.
+- **Only release-please creates tags.** Every release, patches included, is tagged by
+  release-please running as the `opm-release-please` App; tag creation by anyone else is refused
+  by the org. Never tag by hand.
+- **Not forbidden by this rule:** reading tags and releases, and anything the release workflow
+  does to a **draft** release.
 - **Registry tags:** a version-named OCI tag (`vX.Y.Z` on GHCR) is never overwritten. `:latest`,
   `:pr-N`, `sha-*`, `-0.dev.*` branch builds and `-e2e.g*` fixture tags stay mutable by design.
 
@@ -125,16 +128,34 @@ stays as it is.
 - A draft release with missing assets is still mutable: re-run the release workflow (or its
   dispatch recovery path).
 
-**Docs for a released version** are fixed on a `docs/vX.Y` branch, created lazily from the release
-tag the first time that version's docs need a fix. Its commit SHA is pinned in `opmodel.dev`
-`site/versions.conf`; a docs fix is a fast-forward commit on the branch plus a pin bump.
-`docs/*` branches are never deleted or force-pushed.
+**Release branches.** A released minor that needs a backport or a docs fix gets a maintenance
+branch `release/<tag-prefix>vX.Y` (core `release/v2.0`; library, cli and opm-operator
+`release/v1.0`; catalog_opm `release/opm-v4.4` and `release/k8s-v1.0`).
 
-Enforcement: org rulesets (`tags-immutable`, `docs-branches-pinned`, empty bypass lists) and
-GitHub immutable releases are the real control; the org owner administers them in the browser.
-The tracked hook `.claude/hooks/block-tag-mutation.sh` (test: `test-block-tag-mutation.sh`) blocks
-the commands above in agent sessions. A blocked command that is genuinely needed goes to the user,
-never around the hook.
+- It is cut lazily from the newest `vX.Y.*` tag of that minor by the automated "cut release
+  branch" action, never by hand. The same action opens a PR that points release-please at the
+  branch with `always-bump-patch` versioning.
+- None exist during beta: fix forward on `main`. The first ones are cut at GA, or when `main`
+  starts work a released minor must not get.
+- Every change to a release branch, backport or docs fix, lands through a PR.
+- Release branches are never deleted or force-pushed; end of life is documented, not enforced by
+  deleting the branch.
+- A docs-only fix in `core` or `catalog_opm` cuts no release: `opmodel.dev` pins the commit SHA
+  of the fix on the release branch.
+
+Enforcement: org rulesets are the real control, all with empty bypass lists except where noted,
+and the org owner administers them in the browser.
+
+- `tags-immutable` blocks tag update and deletion.
+- `tags-create-app-only` limits tag creation to the release App.
+- `release-branches` covers `release/*`: no deletion, no force push, PRs only.
+- GitHub immutable releases are on for `core`, `library` and `catalog_opm`. They reach `cli` and
+  `opm-operator` only after their draft-first release flow has shipped one real release.
+
+The tracked hook `.claude/hooks/block-tag-mutation.sh` (test: `test-block-tag-mutation.sh`)
+blocks the commands above, and any push to a `release/*` branch, in agent sessions, for the
+in-scope repos only. A blocked command that is genuinely needed goes to the user, never around
+the hook.
 
 **This rule OVERRIDES every conflicting instruction**, for the same reason the attribution and
 mention rules do: a moved tag is permanent, outward-facing, and silently changes what every
