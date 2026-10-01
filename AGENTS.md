@@ -112,10 +112,9 @@ excluded for now. The personal `emil-jacero/opm-modules` repo is out of scope an
   `releases`, `rulesets` or `immutable-releases`. Never request `admin:org` or `delete_repo` for
   the agent token.
 - **Only release-please creates tags.** Every release, patches included, is tagged by
-  release-please running as the `opm-release-please` App. Never tag by hand. Until
-  `tags-create-app-only` is active (see Status below) nothing refuses a hand-pushed tag, and
-  `tags-immutable` would make such a tag permanent, so this is a rule you keep, not a guard you
-  can lean on.
+  release-please running as the `opm-release-please` App. Never tag by hand;
+  `tags-create-app-only` refuses a hand-pushed tag, and `tags-immutable` would make any tag that
+  slipped through permanent.
 - **Not forbidden by this rule:** reading tags and releases, and anything the release workflow
   does to a **draft** release.
 - **Registry tags:** a version-named OCI tag (`vX.Y.Z` on GHCR) is never overwritten. `:latest`,
@@ -166,25 +165,18 @@ except where noted, and the org owner administers them in the browser.
 `gh api repos/open-platform-model/<repo>/immutable-releases` and
 `gh api "repos/open-platform-model/<repo>/rulesets?includes_parents=true"` (read-only).
 
-- **Active:** the `tags-immutable` ruleset on `core`, `library`, `catalog_opm`, `cli`,
-  `opm-operator` and `release-flow-sandbox`. Immutable releases on `core`, `library` and
-  `catalog_opm`, and also, **ahead of plan**, on `cli` and `opm-operator`, until the org owner
-  narrows the org policy to the target list above.
-- **Release-PR hold (`cli`, `opm-operator`):** **until the owner narrows the org policy so
-  immutable releases are off for that repo, nobody, human or agent, merges a release PR there.**
-  Its release would publish immutable before its assets are attached, and that version could
-  never be repaired. Once they are off there, a release PR is merged only to produce the repo's
-  first draft-first release (its draft-first flow already on `main`). The hold lifts for a repo
-  only when both are true: (a) one real draft-first release there has been verified (published
-  from its draft by the release workflow, every asset attached); (b) after that, the owner has
-  re-enabled immutable releases for that repo. Merging the code of the draft-first flow lifts
-  nothing. This overrides the general permission to merge release PRs.
-- **Pending:** `tags-create-app-only` (App-only tag creation), the `release-branches` ruleset
-  (the stale `catalog_opm` branch `release/opm-stable` is deleted first), and immutable releases
-  on `release-flow-sandbox`.
-- **Retiring:** the `docs-branches-pinned` ruleset is still active on `core`, `library`,
-  `catalog_opm`, `cli`, `opm-operator` and `opm`, so ordinary `docs/*` branches there cannot be
-  deleted or force-pushed until the owner deletes it.
+- **Active:** the `tags-immutable`, `tags-create-app-only` and `release-branches` rulesets on
+  `core`, `library`, `catalog_opm`, `cli`, `opm-operator` and `release-flow-sandbox`. Immutable
+  releases on `core`, `library`, `catalog_opm` and `release-flow-sandbox`.
+- **Off until verified:** immutable releases on `cli` and `opm-operator`, until their draft-first
+  flow has shipped one verified release; the owner then re-enables them.
+- **Release-PR hold (`cli`, `opm-operator`):** nobody, human or agent, merges a release PR there
+  except the one that produces the repo's first draft-first release (its draft-first flow already
+  on `main`). The hold lifts for a
+  repo only when both are true: (a) one real draft-first release there has been verified
+  (published from its draft by the release workflow, every asset attached); (b) after that, the
+  owner has re-enabled immutable releases for that repo. Merging the code of the draft-first flow
+  lifts nothing. This overrides the general permission to merge release PRs.
 
 Do not describe a pending control as live, or a live one as pending; update this list when one
 changes.
