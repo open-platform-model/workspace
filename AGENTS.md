@@ -162,14 +162,31 @@ except where noted, and the org owner administers them in the browser.
   `cli` and `opm-operator` only after their draft-first release flow has shipped one real
   release.
 
-**Status (2026-10-01).** Active: the `tags-immutable` ruleset on `core`, `library`,
-`catalog_opm`, `cli` and `opm-operator`; immutable releases on `core`, `library` and
-`catalog_opm`. Pending: `tags-create-app-only` (App-only tag creation), the `release-branches`
-ruleset, and immutable releases on `cli` and `opm-operator` after draft-first ships. Do not
-describe a pending control as live, and update this line when one changes.
+**Status (2026-10-01).** Check before relying on any line here:
+`gh api repos/open-platform-model/<repo>/immutable-releases` and
+`gh api "repos/open-platform-model/<repo>/rulesets?includes_parents=true"` (read-only).
+
+- **Active:** the `tags-immutable` ruleset on `core`, `library`, `catalog_opm`, `cli`,
+  `opm-operator` and `release-flow-sandbox`. Immutable releases on `core`, `library` and
+  `catalog_opm`, and also, **ahead of plan**, on `cli` and `opm-operator`, until the org owner
+  narrows the org policy to the target list above.
+- **Release-PR hold:** while immutable releases are on for `cli` or `opm-operator` and that repo
+  has not shipped its draft-first release flow, **nobody, human or agent, merges a release PR in
+  that repo.** Its release would publish immutable before its assets are attached, and that
+  version could never be repaired. This overrides the general permission to merge release PRs.
+- **Pending:** `tags-create-app-only` (App-only tag creation), the `release-branches` ruleset
+  (the stale `catalog_opm` branch `release/opm-stable` is deleted first), and immutable releases
+  on `release-flow-sandbox`.
+- **Retiring:** the `docs-branches-pinned` ruleset is still active on `core`, `library`,
+  `catalog_opm`, `cli`, `opm-operator` and `opm`, so ordinary `docs/*` branches there cannot be
+  deleted or force-pushed until the owner deletes it.
+
+Do not describe a pending control as live, or a live one as pending; update this list when one
+changes.
 
 The tracked hook `.claude/hooks/block-tag-mutation.sh` (test: `test-block-tag-mutation.sh`)
-blocks the commands above, and any push to a `release/*` branch, in agent sessions that target
+blocks the commands above, and pushes that name a `release/*` branch (a push of `HEAD` or with
+no refspec is not resolved, so never create one by hand), in agent sessions that target
 an in-scope repo; `modules`, `emil-jacero/opm-modules` and the workspace repo pass. Org-level
 ruleset and immutable-release writes and `admin:org` / `delete_repo` token requests are blocked
 from any directory, since they govern the in-scope repos. The hook does not block tag creation.
