@@ -89,7 +89,7 @@ Site pages are the `opmodel.dev/` site content and every page under a repository
   ```
 
   Never write `> [!NOTE] Title`, a foldable `> [!NOTE]-`, or a Starlight `:::note[...]` block.
-- **Figures are `{{< opm/<name> >}}` shortcodes.** Write each on its own line, with a blank line before and after, no parameters and no closing tag. The six names are `module-to-cluster`, `roles-and-artifacts`, `component-to-objects`, `where-things-live`, `three-ways-to-deploy` and `helm-and-opm`. No other shortcode appears in a `docs/site/` page. Hugo expands shortcodes even inside code fences, so to show one in a code block, write `{{</* opm/<name> */>}}`.
+- **Figures are `{{< opm/<name> >}}` shortcodes.** Write each on its own line, with a blank line before and after, no parameters and no closing tag. The seven names are `module-to-cluster`, `roles-and-artifacts`, `component-to-objects`, `where-things-live`, `three-ways-to-deploy`, `helm-and-opm` and `one-trait-any-provider`. No other shortcode appears in a `docs/site/` page. Hugo expands shortcodes even inside code fences, so to show one in a code block, write `{{</* opm/<name> */>}}`.
 - **Order is `weight`.** A page's place in its section comes from the optional front-matter key `weight: N`, a positive integer: lower first, then title. Never write a `sidebar:` block.
 - **A section page is `_index.md`**, never `index.md`: Hugo reads `index.md` as a leaf bundle that swallows its siblings. A section page declares no `type`.
 - **No MDX.** Pages are `.md` files: no `.mdx`, no `import ... from` lines and no component tags such as `<ModuleToCluster />`.
