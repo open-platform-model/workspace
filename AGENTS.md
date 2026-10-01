@@ -157,26 +157,24 @@ except where noted, and the org owner administers them in the browser.
 - `tags-immutable` blocks tag update and deletion.
 - `tags-create-app-only` limits tag creation to the release App (its only bypass).
 - `release-branches` covers `release/*`: no deletion, no force push, PRs only.
-- GitHub immutable releases on `core`, `library`, `catalog_opm` and `release-flow-sandbox`; on
-  `cli` and `opm-operator` only after their draft-first release flow has shipped one real
-  release.
+- GitHub immutable releases on `core`, `library`, `catalog_opm`, `cli`, `opm-operator` and
+  `release-flow-sandbox`. `cli` and `opm-operator` publish draft-first: every asset is attached
+  to the draft and the release is published last.
 
 **Status (2026-10-01).** Check before relying on any line here:
 `gh api repos/open-platform-model/<repo>/immutable-releases` and
 `gh api "repos/open-platform-model/<repo>/rulesets?includes_parents=true"` (read-only).
 
-- **Active:** the `tags-immutable`, `tags-create-app-only` and `release-branches` rulesets on
-  `core`, `library`, `catalog_opm`, `cli`, `opm-operator` and `release-flow-sandbox`. Immutable
-  releases on `core`, `library`, `catalog_opm` and `release-flow-sandbox`.
-- **Off until verified:** immutable releases on `cli` and `opm-operator`, until their draft-first
-  flow has shipped one verified release; the owner then re-enables them.
-- **Release-PR hold (`cli`, `opm-operator`):** nobody, human or agent, merges a release PR there
-  except the one that produces the repo's first draft-first release (its draft-first flow already
-  on `main`). The hold lifts for a
-  repo only when both are true: (a) one real draft-first release there has been verified
-  (published from its draft by the release workflow, every asset attached); (b) after that, the
-  owner has re-enabled immutable releases for that repo. Merging the code of the draft-first flow
-  lifts nothing. This overrides the general permission to merge release PRs.
+- **Active:** the `tags-immutable`, `tags-create-app-only` and `release-branches` rulesets and
+  immutable releases on `core`, `library`, `catalog_opm`, `cli`, `opm-operator` and
+  `release-flow-sandbox`.
+- **To verify:** the first real draft-first release of `cli` and of `opm-operator` (immutable
+  releases were turned on before it, by owner decision). After merging that release PR, confirm
+  the release was published from its draft by the release workflow, is authored by the release
+  App, reports `isImmutable: true` and carries every asset (cli: the goreleaser archives and
+  `checksums.txt`; opm-operator: `install.yaml` and the example bundle and manifests). If a run
+  fails while the release is still a draft, finish it with the workflow's manual recovery run;
+  never publish a draft by hand.
 
 Do not describe a pending control as live, or a live one as pending; update this list when one
 changes.
