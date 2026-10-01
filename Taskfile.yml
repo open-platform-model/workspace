@@ -54,7 +54,7 @@ includes:
 
 tasks:
   deps:update:
-    desc: "Update CUE deps to latest across catalog_opm/cli/core/opm-operator/modules/opm-modules cue.mod files (fixture trees and .claude worktrees excluded; includes cli/hack/platform), the CLI templates, and the Platform pins outside a cue.mod file (operator sample Platform, cli/hack/kind-platform.yaml). Not covered: published fixtures (task deps:pins:fixtures), the CI opm pin (task deps:pins:opm-cli), Go deps (Dependabot)"
+    desc: "Update CUE deps to latest across catalog_opm/cli/core/opm-operator/modules/opm-modules cue.mod files (fixture trees and .claude worktrees excluded; includes cli/hack/platform), the CLI templates (each changed template gets a patch bump), and the Platform pins outside a cue.mod file (operator sample Platform, cli/hack/kind-platform.yaml). Not covered: published fixtures (task deps:pins:fixtures), the CI opm pin (task deps:pins:opm-cli), Go deps (Dependabot)"
     cmds:
       - task: deps:update:modules
       - task: deps:update:templates
@@ -116,35 +116,7 @@ tasks:
         printf "Done.\n"
 
   deps:update:templates:
-    desc: Update CUE deps in CLI template modules (cli/templates/*/cue.mod/module.cue)
+    desc: Update CUE deps in CLI template modules (cli/templates/*/cue.mod/module.cue) and bump the patch version of each template whose cue.mod changed while GHCR holds its declared version
     internal: true
     cmds:
-      - |
-        find cli/templates -mindepth 2 -maxdepth 2 -name "cue.mod" -type d 2>/dev/null | sort | while read -r moddir; do
-          dir=$(dirname "$moddir")
-          printf "==> Updating template deps in \033[1;36m%s\033[0m\n" "$dir"
-          (
-            cd "$dir"
-            deps=$(sed -n '/^deps: {$/,/^}$/p' cue.mod/module.cue 2>/dev/null | grep -oP '^\s*"\K[^"]+(?=":\s*\{)') || true
-
-            if [ -z "$deps" ]; then
-              printf "    (no deps)\n"
-              exit 0
-            fi
-
-            for dep in $deps; do
-              old_ver=$(grep -FA5 "\"${dep}\"" cue.mod/module.cue | grep -oP 'v:\s*"\K[^"]+' | head -1)
-              cue mod get "$dep" > /dev/null 2>&1 || true
-              new_ver=$(grep -FA5 "\"${dep}\"" cue.mod/module.cue | grep -oP 'v:\s*"\K[^"]+' | head -1)
-              if [ -n "$new_ver" ] && [ "$old_ver" != "$new_ver" ]; then
-                printf "    %s: \033[1;33m%s\033[0m -> \033[0;32m%s\033[0m\n" "$dep" "$old_ver" "$new_ver"
-              else
-                printf "    %s: \033[2m%s (unchanged)\033[0m\n" "$dep" "$old_ver"
-              fi
-            done
-            # A bump can add or drop requirements; the template publish gate
-            # refuses a template that is not tidy (cli publish-templates.sh).
-            cue mod tidy
-          )
-        done
-        printf "Done.\n"
+      - .tasks/deps/templates.sh

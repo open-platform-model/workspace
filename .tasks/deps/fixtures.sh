@@ -24,6 +24,9 @@
 # Go tests read the coordinate from the identity package (tests/fixtures/
 # fixtures.go, test/fixtures/fixtures.go) and need no edit.
 set -euo pipefail
+here=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+# shellcheck disable=SC1091 # lib.sh is checked on its own
+. "$here/lib.sh"
 
 # Update a module's cue.mod deps in one resolution pass; echo 1 if anything moved.
 bump_deps() {
@@ -54,7 +57,7 @@ for dir in cli/tests/fixtures/modules/*/ opm-operator/test/fixtures/modules/*/ o
   [ -d "$dir/identity" ] || continue
   if [ "$moved" = 1 ]; then
     cur=$(cd "$dir" && cue eval ./identity --out text -e Version)
-    next=$(awk -F. -v OFS=. '{$NF=$NF+1; print}' <<<"$cur")
+    next=$(next_patch "$cur")
     (cd "$dir" && opm module version set "$next" . > /dev/null)
     path=$(cd "$dir" && cue eval ./identity --out text -e ModulePath)
     newver["$path"]="$next"
