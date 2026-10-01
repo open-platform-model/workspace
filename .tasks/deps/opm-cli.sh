@@ -5,12 +5,16 @@
 #   opm-modules  .github/workflows/*.yml   OPM_CLI_VERSION: 'vX'   (personal fleet, when checked out)
 #   opm-operator .github/workflows/*.yml   go install .../cli/cmd/opm@vX
 # core pins no CLI (its CI is cue-only); it is listed so nobody wonders.
-# Usage: opm-cli.sh [vX.Y.Z]   (default: cli's newest release tag)
+# Usage: opm-cli.sh [vX.Y.Z]
+#   default: cli's newest release whose opm-linux-amd64.tar.gz and checksums.txt
+#   download anonymously (what CI fetches); an explicit version is verified the
+#   same way. opm-operator's `go install` needs only the tag, but takes the same
+#   version so every repo pins one CLI.
 set -euo pipefail
 here=$(dirname "$0")
-ver="${1:-v$("$here/latest-tag.sh" cli v)}"
-case "$ver" in v*) ;; *) ver="v$ver" ;; esac
-printf "==> opm CLI pin: \033[0;32m%s\033[0m\n" "$ver"
+ver="v$("$here/latest-tag.sh" cli v opm-linux-amd64.tar.gz,checksums.txt "${1:-}")"
+if [ -n "${1:-}" ]; then how="explicit, verified"; else how="newest published release"; fi
+printf "==> opm CLI pin: \033[0;32m%s\033[0m (%s)\n" "$ver" "$how"
 report() { # $1 file, $2 old versions (space-separated)
   if [ "$2" = "$ver" ]; then printf "    %s: \033[2m%s (unchanged)\033[0m\n" "$1" "$2"
   else printf "    %s: \033[1;33m%s\033[0m -> \033[0;32m%s\033[0m\n" "$1" "$2" "$ver"; fi
