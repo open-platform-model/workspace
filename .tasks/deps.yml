@@ -19,6 +19,6 @@ tasks:
       - .tasks/deps/opm-cli.sh {{.VERSION}}
 
   fixtures:
-    desc: "Bump the CUE deps of the published test fixtures (cli/tests/fixtures, opm-operator/test/fixtures), advance each changed fixture's declared version and re-pin every consumer (operator modulepackages, moduleinstance/sample manifests, cli operator-owned/examples cue.mod) in one pass; one PR per repo, PR CI seeds its registry from the tree"
+    desc: "Bump the CUE deps of the published test fixtures (cli/tests/fixtures, opm-operator/test/fixtures), advance each changed fixture's declared version and re-pin every consumer, whose core and catalog pins follow the fixture (operator modulepackages, moduleinstance/sample manifests, cli operator-owned/examples cue.mod) in one pass; one PR per repo, PR CI seeds its registry from the tree"
     cmds:
       - .tasks/deps/fixtures.sh
