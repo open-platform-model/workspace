@@ -168,13 +168,10 @@ except where noted, and the org owner administers them in the browser.
 - **Active:** the `tags-immutable`, `tags-create-app-only` and `release-branches` rulesets and
   immutable releases on `core`, `library`, `catalog_opm`, `cli`, `opm-operator` and
   `release-flow-sandbox`.
-- **To verify:** the first real draft-first release of `cli` and of `opm-operator` (immutable
-  releases were turned on before it, by owner decision). After merging that release PR, confirm
-  the release was published from its draft by the release workflow, is authored by the release
-  App, reports `isImmutable: true` and carries every asset (cli: the goreleaser archives and
-  `checksums.txt`; opm-operator: `install.yaml` and the example bundle and manifests). If a run
-  fails while the release is still a draft, finish it with the workflow's manual recovery run;
-  never publish a draft by hand.
+- **Verified (2026-10-01):** the first draft-first releases, `cli` `v1.0.0-beta.4` and
+  `opm-operator` `v1.0.0-beta.3`, were published from their drafts by the release workflow,
+  authored by the release App, immutable and carrying every asset. `cli` and `opm-operator`
+  release normally from now on.
 
 Do not describe a pending control as live, or a live one as pending; update this list when one
 changes.
