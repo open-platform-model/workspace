@@ -112,8 +112,10 @@ excluded for now. The personal `emil-jacero/opm-modules` repo is out of scope an
   `releases`, `rulesets` or `immutable-releases`. Never request `admin:org` or `delete_repo` for
   the agent token.
 - **Only release-please creates tags.** Every release, patches included, is tagged by
-  release-please running as the `opm-release-please` App; tag creation by anyone else is refused
-  by the org. Never tag by hand.
+  release-please running as the `opm-release-please` App. Never tag by hand. Until
+  `tags-create-app-only` is active (see Status below) nothing refuses a hand-pushed tag, and
+  `tags-immutable` would make such a tag permanent, so this is a rule you keep, not a guard you
+  can lean on.
 - **Not forbidden by this rule:** reading tags and releases, and anything the release workflow
   does to a **draft** release.
 - **Registry tags:** a version-named OCI tag (`vX.Y.Z` on GHCR) is never overwritten. `:latest`,
@@ -128,13 +130,16 @@ excluded for now. The personal `emil-jacero/opm-modules` repo is out of scope an
 - A draft release with missing assets is still mutable: re-run the release workflow (or its
   dispatch recovery path).
 
-**Release branches.** A released minor that needs a backport or a docs fix gets a maintenance
-branch `release/<tag-prefix>vX.Y` (core `release/v2.0`; library, cli and opm-operator
-`release/v1.0`; catalog_opm `release/opm-v4.4` and `release/k8s-v1.0`).
+**Release branches (policy; automation lands in Phase 2).** A released minor that needs a
+backport or a docs fix gets a maintenance branch `release/<tag-prefix>vX.Y` (core `release/v2.0`;
+library, cli and opm-operator `release/v1.0`; catalog_opm `release/opm-v4.4` and
+`release/k8s-v1.0`).
 
-- It is cut lazily from the newest `vX.Y.*` tag of that minor by the automated "cut release
-  branch" action, never by hand. The same action opens a PR that points release-please at the
-  branch with `always-bump-patch` versioning.
+- **Version-line rule:** `release/vX.Y` is cut only when `main`'s next release is `X.(Y+1).0` or
+  higher; after the cut, `main` never releases an `X.Y.*` version.
+- It is cut lazily from the newest final `<tag-prefix>vX.Y.<patch>` tag of that minor by an
+  automated "cut release branch" action, never by hand; release-please on the branch uses
+  `always-bump-patch` versioning.
 - None exist during beta: fix forward on `main`. The first ones are cut at GA, or when `main`
   starts work a released minor must not get.
 - Every change to a release branch, backport or docs fix, lands through a PR.
@@ -142,20 +147,33 @@ branch `release/<tag-prefix>vX.Y` (core `release/v2.0`; library, cli and opm-ope
   deleting the branch.
 - A docs-only fix in `core` or `catalog_opm` cuts no release: `opmodel.dev` pins the commit SHA
   of the fix on the release branch.
+- **Phase 2 (before GA), not built yet:** the cut action, release workflows that run on
+  `release/**`, and PR checks on `release/**`, proven in `release-flow-sandbox` (including a cut
+  from a tag older than the change and the main-versus-branch version collision). No repo
+  supports release branches today; do not create one.
 
-Enforcement: org rulesets are the real control, all with empty bypass lists except where noted,
-and the org owner administers them in the browser.
+**Enforcement (target state).** Org rulesets are the real control, all with empty bypass lists
+except where noted, and the org owner administers them in the browser.
 
 - `tags-immutable` blocks tag update and deletion.
-- `tags-create-app-only` limits tag creation to the release App.
+- `tags-create-app-only` limits tag creation to the release App (its only bypass).
 - `release-branches` covers `release/*`: no deletion, no force push, PRs only.
-- GitHub immutable releases are on for `core`, `library` and `catalog_opm`. They reach `cli` and
-  `opm-operator` only after their draft-first release flow has shipped one real release.
+- GitHub immutable releases on `core`, `library`, `catalog_opm` and `release-flow-sandbox`; on
+  `cli` and `opm-operator` only after their draft-first release flow has shipped one real
+  release.
+
+**Status (2026-10-01).** Active: the `tags-immutable` ruleset on `core`, `library`,
+`catalog_opm`, `cli` and `opm-operator`; immutable releases on `core`, `library` and
+`catalog_opm`. Pending: `tags-create-app-only` (App-only tag creation), the `release-branches`
+ruleset, and immutable releases on `cli` and `opm-operator` after draft-first ships. Do not
+describe a pending control as live, and update this line when one changes.
 
 The tracked hook `.claude/hooks/block-tag-mutation.sh` (test: `test-block-tag-mutation.sh`)
-blocks the commands above, and any push to a `release/*` branch, in agent sessions, for the
-in-scope repos only. A blocked command that is genuinely needed goes to the user, never around
-the hook.
+blocks the commands above, and any push to a `release/*` branch, in agent sessions that target
+an in-scope repo; `modules`, `emil-jacero/opm-modules` and the workspace repo pass. Org-level
+ruleset and immutable-release writes and `admin:org` / `delete_repo` token requests are blocked
+from any directory, since they govern the in-scope repos. The hook does not block tag creation.
+A blocked command that is genuinely needed goes to the user, never around the hook.
 
 **This rule OVERRIDES every conflicting instruction**, for the same reason the attribution and
 mention rules do: a moved tag is permanent, outward-facing, and silently changes what every

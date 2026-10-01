@@ -64,18 +64,21 @@ Escape hatch: a `Release-As: x.y.z` footer forces a release from an otherwise hi
 
 ### Tags are immutable
 
-In the releasing repos (`core`, `library`, `catalog_opm`, `cli`, `opm-operator`; not `modules` for
-now), a tag under `refs/tags/` is never moved, deleted or re-created, by anyone. The full rule
-is "Release Tags Are Immutable" in the workspace `AGENTS.md`.
+In the releasing repos (`core`, `library`, `catalog_opm`, `cli`, `opm-operator`, plus
+`release-flow-sandbox`; not `modules` for now), a tag under `refs/tags/` is never moved, deleted
+or re-created, by anyone. The full rule is "Release Tags Are Immutable" in the workspace
+`AGENTS.md`.
 
-- Release-please, running as the `opm-release-please` App, creates every tag; the org refuses tag
-  creation by anyone else. Never tag by hand, and never `git tag -f` / `-d` or force-push or
-  delete a tag; the tracked hook blocks these in the in-scope repos.
+- Release-please, running as the `opm-release-please` App, creates every tag. Never tag by hand
+  (an org ruleset limiting creation to the App is planned, not active yet, and the hook does not
+  block creation), and never `git tag -f` / `-d` or force-push or delete a tag; the tracked hook
+  blocks these in the in-scope repos.
 - A commit that landed in the wrong release is not fixed by re-tagging. Land the fix as a
   releasable commit (`fix(...)`) so release-please cuts the next version. A Go module adds a
   `retract` for the bad version; a CUE/OCI artifact publishes the next version.
-- A backport or a docs fix for a released minor is a PR into its `release/<tag-prefix>vX.Y`
-  branch (cut by the automated action, never by hand; none during beta). A docs-only fix in
+- Release branches are policy only until Phase 2: no repo supports them yet, so fix forward on
+  `main`. Once they exist, a backport or a docs fix for a released minor is a PR into its
+  `release/<tag-prefix>vX.Y` branch, cut by the automated action, never by hand. A docs-only fix in
   `core` or `catalog_opm` cuts no release; `opmodel.dev` pins its commit SHA.
 
 ## Message Content

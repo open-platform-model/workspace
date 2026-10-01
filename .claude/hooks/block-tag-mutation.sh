@@ -55,11 +55,12 @@ import json, os, re, shlex, subprocess, sys
 from urllib.parse import unquote
 
 FOOTER = (
-    "Release tags are immutable in open-platform-model/{core,library,catalog_opm,cli,opm-operator}: "
+    "Release tags are immutable in open-platform-model/{core,library,catalog_opm,cli,opm-operator,"
+    "release-flow-sandbox}: "
     "no tag under refs/tags/ is ever moved, deleted or re-created, by anyone. Fix a wrong or broken "
     "release by releasing the next version (Go: retract in the new version; CUE/OCI: publish the "
     "next version). Release tags, releases and release/* branches belong to release-please and the "
-    "release workflows, not to an agent shell; a backport is a PR into the release branch. See "
+    "release workflows, not to an agent shell. See "
     "'Release Tags Are Immutable' in the workspace AGENTS.md. If this is a false positive, ask the "
     "user to run the command themselves."
 )
