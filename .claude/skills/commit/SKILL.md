@@ -25,15 +25,16 @@ Common types: `feat`, `fix`, `refactor`, `docs`, `chore`, `test`, `style`, `ci`,
 release-please cuts a release whenever the changelog it generates is non-empty, so the commit
 type decides whether a release happens:
 
-- **Release:** `feat`, `fix`, `perf`, `revert`, `deps`, plus `docs` and `refactor` in the repos
-  that list them visible (`cli`, `library`, `opm-operator`).
+- **Release:** `feat`, `fix`, `perf`, `revert` everywhere; `deps` and `refactor` in `cli`,
+  `library`, `opm-operator`; `docs` there only until each repo's `prepare-release-cascade` change
+  hides it (owner decision 2026-10-01). See the workspace `RELEASING.md`, "Pin classes".
 - **Never release:** `chore`, `test`, `ci`, `build`, `style` (hidden in every repo).
 
 The type follows **what ships**, not what kind of edit it was:
 
 - A dependency or pin bump that changes a shipped artifact (`go.mod`, the `cue.mod` of a published
   module or catalog, `cli/templates/*`) is `fix(deps): ...` (Dependabot's `deps: ...` is
-  equivalent).
+  equivalent in `cli`, `library`, `opm-operator`; core and catalog_opm drop it).
 - A bump that touches only test fixtures, samples, examples or the dev harness
   (`test/fixtures/*`, `tests/fixtures/*`, `config/samples/*`, `hack/*`, `examples/*`, `testdata/*`)
   is `test(fixtures): ...`.
