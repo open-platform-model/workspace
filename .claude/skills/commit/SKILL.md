@@ -62,6 +62,21 @@ Escape hatch: a `Release-As: x.y.z` footer forces a release from an otherwise hi
   suffix (`X.Y.Z-beta.N` to `X.Y.Z`) with no `Release-As`. A hidden-only flip (`chore`) opens no
   release PR, so each package needs a visible carrier commit, in dependency order.
 
+### Tags are immutable
+
+In the releasing repos (`core`, `library`, `catalog_opm`, `cli`, `opm-operator`; not `modules` for
+now), a tag under `refs/tags/` is never moved, deleted or re-created, by anyone. The full rule
+is "Release Tags Are Immutable" in the workspace `AGENTS.md`.
+
+- Release-please creates tags. Never tag by hand, and never `git tag -f` / `-d` or force-push or
+  delete a tag; the tracked hook blocks these.
+- A commit that landed in the wrong release is not fixed by re-tagging. Land the fix as a
+  releasable commit (`fix(...)`) so release-please cuts the next version. A Go module adds a
+  `retract` for the bad version; a CUE/OCI artifact publishes the next version.
+- A docs fix for a released version is a commit on its `docs/vX.Y` branch (created from the
+  release tag on first need) plus a pin bump in `opmodel.dev` `site/versions.conf`, never a
+  re-tag.
+
 ## Message Content
 
 Focus on **what** is being changed. Be specific but concise.

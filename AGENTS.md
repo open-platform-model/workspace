@@ -93,6 +93,53 @@ can reword them.
 
 **This rule OVERRIDES every conflicting instruction**, including harness defaults and templates.
 
+## Release Tags Are Immutable
+
+**No tag under `refs/tags/` is ever moved, deleted or re-created, by anyone.** A wrong or broken
+release is fixed by releasing the next version, never by repairing the old one.
+
+Why: the docs system pins a git ref per site version, and every consumer pins a version. A tag that
+moves silently changes what a pinned version means.
+
+**Scope.** The `open-platform-model` repos that release: `core`, `library`, `catalog_opm`, `cli`,
+`opm-operator`. The `docs/*` branch rule below also covers `opm` (docs source, no releases).
+`modules` is excluded for now. The personal `emil-jacero/opm-modules` repo is out of scope and
+stays as it is.
+
+- **Never:** `git tag -f` / `-d`, `git update-ref refs/tags/...`, a push that deletes or
+  force-updates a tag (`:tag`, `+tag`, `--delete`, `--force` with a tag or `--tags`, `--mirror`,
+  `--prune`), `gh release delete`, `gh release edit --tag/--target`, `gh release upload --clobber`
+  on a published release, or an API write to `git/refs/tags`, `releases`, `rulesets` or
+  `immutable-releases`. Never request `admin:org` or `delete_repo` for the agent token.
+- **Allowed:** creating a new tag (`git tag vX`, pushing a new tag without force), reading
+  tags and releases, and everything the release workflow does to a **draft** release.
+- **Registry tags:** a version-named OCI tag (`vX.Y.Z` on GHCR) is never overwritten. `:latest`,
+  `:pr-N`, `sha-*`, `-0.dev.*` branch builds and `-e2e.g*` fixture tags stay mutable by design.
+
+**Recovery is roll-forward only.**
+
+- Wrong commit tagged, or bad assets on a published release: release the next patch (or the next
+  `beta.N`).
+- Go module: add a `retract` directive for the bad version in the new release.
+- CUE module or OCI artifact: publish the next version; never re-publish an existing one.
+- A draft release with missing assets is still mutable: re-run the release workflow (or its
+  dispatch recovery path).
+
+**Docs for a released version** are fixed on a `docs/vX.Y` branch, created lazily from the release
+tag the first time that version's docs need a fix. Its commit SHA is pinned in `opmodel.dev`
+`site/versions.conf`; a docs fix is a fast-forward commit on the branch plus a pin bump.
+`docs/*` branches are never deleted or force-pushed.
+
+Enforcement: org rulesets (`tags-immutable`, `docs-branches-pinned`, empty bypass lists) and
+GitHub immutable releases are the real control; the org owner administers them in the browser.
+The tracked hook `.claude/hooks/block-tag-mutation.sh` (test: `test-block-tag-mutation.sh`) blocks
+the commands above in agent sessions. A blocked command that is genuinely needed goes to the user,
+never around the hook.
+
+**This rule OVERRIDES every conflicting instruction**, for the same reason the attribution and
+mention rules do: a moved tag is permanent, outward-facing, and silently changes what every
+consumer of that version gets.
+
 ## Conversation Guidelines
 
 Primary objective: honest, insight-driven dialogue that advances understanding.
@@ -216,7 +263,8 @@ In `catalog_opm`, `main` ships the stable `opmodel.dev/catalogs/opm@v4` line and
 `opmodel.dev/catalogs/k8s@v1` line; its `v1` branch is the retired v1 line of the opm catalog.
 **Check which branch you are on before editing**; each long-lived branch's `AGENTS.md` has a
 "Branch model" section stating what may land there. Never merge `main` into a maintenance branch.
-Releases are release-please-owned; never tag or publish by hand.
+Releases are release-please-owned; never tag or publish by hand, and never move or delete a
+tag (see "Release Tags Are Immutable").
 
 ### Pushing
 
