@@ -42,7 +42,7 @@ releases only after every repo it ships against has released.
 | Tier | Repos | Ships against |
 | --- | --- | --- |
 | 0 | `core` | nothing OPM-owned |
-| 1 | `catalog_opm` (opm and k8s catalogs) and `library`, in parallel | core |
+| 1 | `catalog_opm` and `library`, in parallel | core |
 | 2 | `opm-operator` | library |
 | 3 | `cli` | library, opm-operator (embedded `install.yaml`), the opm catalog and core (templates) |
 | leaves | `modules`, `opm-suite-installer`, `opm-modules` | stay manual |
@@ -76,7 +76,7 @@ Where the pins live today:
 
 | Repo | Class | Where | Upstream |
 | --- | --- | --- | --- |
-| `catalog_opm` | shipped | `opm/cue.mod/module.cue` and `k8s/cue.mod/module.cue`; both core pins stay equal | core |
+| `catalog_opm` | shipped | `opm/cue.mod/module.cue` | core |
 | `catalog_opm` | release-tool | `.opm-cli-version` (today `OPM_CLI_VERSION` in three workflows) | opm CLI |
 | `library` | shipped | `DefaultSchemaModule` in `opm/schema/loader.go`; `DefaultCoreVersion` in `opm/internal/registrytest/registrytest.go` derives from it once `derive-fixture-versions` lands (a hand-kept mirror until then) | core |
 | `library` | test | the `cue.mod` files under `modules/`, `testdata/modules/`, `testdata/parity/`, `testdata/cue.mod`, `testdata/render/**`, and the version literals in kernel tests | core, opm catalog |
@@ -132,8 +132,8 @@ upstream.
 - **A new major is never crossed by the bot.** Moving to `opmodel.dev/core@v3` or
   `opmodel.dev/catalogs/opm@v5` is a hand-made crossing: an ordinary PR that changes the import
   paths and fixes what breaks. The bot only reports "new major available".
-- **Beta lines just advance `beta.N`.** While a repo releases `X.0.0-beta.N` (core, the k8s
-  catalog, library, opm-operator, cli), every releasing type, `!` included, moves it to the next
+- **Beta lines just advance `beta.N`.** While a repo releases `X.0.0-beta.N` (core, library,
+  opm-operator, cli), every releasing type, `!` included, moves it to the next
   `beta.N`. The type still decides whether a release happens and what the changelog says.
 - **The opm catalog is a stable 4.x line.** There `feat(deps)` cuts a minor release, and `!` would
   make release-please propose 5.0.0 while the module path stays `opmodel.dev/catalogs/opm@v4`.
@@ -297,7 +297,7 @@ labels other bots set, with their live values:
 
 | Repo | Shipped | Test and release-tool |
 | --- | --- | --- |
-| `catalog_opm` | core in `opm/` and `k8s/`, both to the same version | `.opm-cli-version` |
+| `catalog_opm` | core in `opm/` | `.opm-cli-version` |
 | `library` | `DefaultSchemaModule` only, labelled `need-human-review`; `DefaultCoreVersion` and the other test literals derive from it after `derive-fixture-versions` | test `cue.mod` files and the parity catalog |
 | `opm-operator` | `go get` library and `go mod tidy` | samples, `test/fixtures/catalog.go`, fixtures, `.opm-cli-version` |
 | `cli` | `go get` library; `task operator:sync` to the newest published operator; templates and their versions | `hack/platform`, `hack/kind-platform.yaml`, `examples`, the podinfo fixture, and the six testdata `cue.mod` files that `bump-stale-testdata-pins` brings current (`tests/fixtures/valid/simple-module`, `tests/fixtures/valid/module-with-debug-values`, `internal/instinit/testdata/initvalues`, `internal/workflow/render/testdata/skip-unprovided`, `tests/e2e/testdata/duplicate-identities`, `tests/integration/module-apply/testdata`) |
