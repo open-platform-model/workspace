@@ -88,7 +88,7 @@ Where the pins live today:
 | `cli` | shipped | `PinnedOperatorVersion` in `internal/operator/manifest.go` plus `internal/operator/dist/install.yaml`, always moved together | opm-operator |
 | `cli` | shipped | `templates/{minimal,standard,advanced}/cue.mod/module.cue`, plus each template's own version | core, opm catalog |
 | `cli` | test | `hack/platform/cue.mod`, `hack/kind-platform.yaml`, `examples/cue.mod`, `tests/fixtures/` (including `tests/fixtures/valid/{simple-module,module-with-debug-values}/cue.mod`), `tests/e2e/testdata/operator-owned/`, and the `cue.mod` files under `internal/instinit/testdata/initvalues/`, `internal/workflow/render/testdata/skip-unprovided/`, `tests/e2e/testdata/duplicate-identities/` and `tests/integration/module-apply/testdata/` | core, catalogs |
-| `cli` | frozen | in `tests/e2e/instance_build_test.go`, the older-core platform, `collisionCorePin` and `olderCatalogPin` (`opmodel.dev/catalogs/opm@v4`); the old core pin in `internal/cmd/platform/check_test.go`; all listed in cli's `.cascade-frozen` (created by `bump-stale-testdata-pins`) | none |
+| `cli` | frozen | in `tests/e2e/instance_build_test.go`, the older-core platform, `collisionCorePin` and `olderCatalogPin` (`opmodel.dev/catalogs/opm@v4`); the old core pins in `internal/cmd/platform/check_test.go`; the `TestRender_Golden` core literal in `internal/instinit/render_test.go`; all listed in cli's `.cascade-frozen` (created by `bump-stale-testdata-pins`) | none |
 
 core pins nothing OPM-owned and has no receiver.
 
