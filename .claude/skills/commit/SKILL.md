@@ -39,8 +39,9 @@ The type follows **what ships**, not what kind of edit it was:
   (`test/fixtures/*`, `tests/fixtures/*`, `config/samples/*`, `hack/*`, `examples/*`, `testdata/*`)
   is `test(fixtures): ...`.
 - Never use `chore` for a bump, and never mix a shipped bump and a fixture bump in one commit.
-  One exception: in a `deps-cascade` PR (the rolling `deps/cascade` bot PR), the shipped bump and
-  the test, fixture or release-tool edits in that PR squash together as one `fix(deps)` commit. The rule holds
+  One exception: in a `deps-cascade` PR (the rolling `deps/cascade` bot PR), the shipped bump
+  and the test, fixture or release-tool edits in that PR squash together as one `fix(deps)`
+  commit. The rule holds
   everywhere else. See the workspace `RELEASING.md`, "Bump rule".
 - An opm CLI pin bump (`.opm-cli-version`, or a CI workflow literal) is `ci(deps): ...`: a
   release tool, never shipped.
@@ -89,10 +90,11 @@ or re-created, by anyone. The full rule is "Release Tags Are Immutable" in the w
 - A commit that landed in the wrong release is not fixed by re-tagging. Land the fix as a
   releasable commit (`fix(...)`) so release-please cuts the next version. A Go module adds a
   `retract` for the bad version; a CUE/OCI artifact publishes the next version.
-- Release branches are policy only until Phase 2: no repo supports them yet, so fix forward on
-  `main`. Once they exist, a backport or a docs fix for a released minor is a PR into its
+- Release branches are policy only until their automation lands: no repo supports them yet, so fix
+  forward on `main`. Once they exist, a backport or a docs fix for a released minor is a PR into its
   `release/<tag-prefix>vX.Y` branch, cut by the automated action, never by hand. A docs-only fix in
-  `core` or `catalog_opm` cuts no release; `opmodel.dev` pins its commit SHA.
+  `core` or `catalog_opm` cuts no release; `opmodel.dev` builds their docs from the release branch
+  head.
 
 ## Message Content
 

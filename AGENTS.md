@@ -129,7 +129,7 @@ excluded for now. The personal `emil-jacero/opm-modules` repo is out of scope an
 - A draft release with missing assets is still mutable: re-run the release workflow (or its
   dispatch recovery path).
 
-**Release branches (policy; automation lands in Phase 2).** A released minor that needs a
+**Release branches (policy; automation lands before GA).** A released minor that needs a
 backport or a docs fix gets a maintenance branch `release/<tag-prefix>vX.Y` (core `release/v2.0`;
 library, cli and opm-operator `release/v1.0`; catalog_opm `release/opm-v4.4` and
 `release/k8s-v1.0`).
@@ -147,9 +147,9 @@ library, cli and opm-operator `release/v1.0`; catalog_opm `release/opm-v4.4` and
 - A docs-only fix in `core` or `catalog_opm` cuts no release: `opmodel.dev` builds their docs from
   the release branch head (from `main` while that line has no release branch) and records the SHA
   in every build (`site/versions.conf`, line mode).
-- **Phase 2 (before GA), not built yet:** the cut action, release workflows that run on
-  `release/**`, and PR checks on `release/**`, proven in `release-flow-sandbox` (including a cut
-  from a tag older than the change and the main-versus-branch version collision). No repo
+- **Release-branch automation (before GA), not built yet:** the cut action, release workflows that
+  run on `release/**`, and PR checks on `release/**`, proven in `release-flow-sandbox` (including a
+  cut from a tag older than the change and the main-versus-branch version collision). No repo
   supports release branches today; do not create one.
 
 **Enforcement (target state).** Org rulesets are the real control, all with empty bypass lists
@@ -271,9 +271,10 @@ owner settings. Read it before touching a pin, a release workflow or a `deps/cas
 - A downstream bump is typed by what changes for the downstream's users: `fix(deps)` by default for
   a shipped pin, `test(fixtures)` for test-only pins, `ci(deps)` for the opm CLI release-tool pin.
 - A human may retitle a cascade PR to `feat(deps)` or add `!` (never `!` in catalog_opm; see
-  `RELEASING.md`, "Bump rule"); the bot never lowers a type or drops a `!`. A new major is a hand-made crossing, never a cascade bump.
-- Only a `deps-cascade` PR may squash a shipped bump together with the test and fixture edits it
-  forces, as one `fix(deps)` commit.
+  `RELEASING.md`, "Bump rule"); the bot never lowers a type or drops a `!`. A new major is a
+  hand-made crossing, never a cascade bump.
+- Only a `deps-cascade` PR may squash a shipped bump together with the test, fixture or release-tool
+  edits in that PR, as one `fix(deps)` commit.
 
 ## Workspace Repo
 

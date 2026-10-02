@@ -142,8 +142,8 @@ upstream.
 - **Test and release-tool pins never release.** A cascade PR that moves only test pins is
   `test(fixtures)`. One that moves only the opm CLI pin is `ci(deps)`.
 - **A cascade PR may mix classes.** The shipped bump and the test, fixture or release-tool edits in
-  the same PR squash together as one `fix(deps)` commit. This is the one exception to the commit skill's "never mix a
-  shipped bump and a fixture bump" rule. It holds only in a `deps-cascade` PR.
+  the same PR squash together as one `fix(deps)` commit. This is the one exception to the commit
+  skill's "never mix a shipped bump and a fixture bump" rule. It holds only in a `deps-cascade` PR.
 
 ## The cascade
 
