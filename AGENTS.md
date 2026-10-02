@@ -270,8 +270,8 @@ owner settings. Read it before touching a pin, a release workflow or a `deps/cas
 
 - A downstream bump is typed by what changes for the downstream's users: `fix(deps)` by default for
   a shipped pin, `test(fixtures)` for test-only pins, `ci(deps)` for the opm CLI release-tool pin.
-- A human may retitle a cascade PR to `feat(deps)` or add `!`; the bot never lowers a type or drops
-  a `!`. A new major is a hand-made crossing, never a cascade bump.
+- A human may retitle a cascade PR to `feat(deps)` or add `!` (never `!` in catalog_opm; see
+  `RELEASING.md`, "Bump rule"); the bot never lowers a type or drops a `!`. A new major is a hand-made crossing, never a cascade bump.
 - Only a `deps-cascade` PR may squash a shipped bump together with the test and fixture edits it
   forces, as one `fix(deps)` commit.
 
