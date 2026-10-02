@@ -119,6 +119,9 @@ excluded for now. The personal `emil-jacero/opm-modules` repo is out of scope an
   does to a **draft** release.
 - **Registry tags:** a version-named OCI tag (`vX.Y.Z` on GHCR) is never overwritten. `:latest`,
   `:pr-N`, `sha-*`, `-0.dev.*` branch builds and `-e2e.g*` fixture tags stay mutable by design.
+  Docs bundles under `ghcr.io/open-platform-model/docs/` follow docs-kit's own scheme: the full
+  `X.Y.Z.N` tag is never overwritten, while `X.Y.Z`, `X.Y`, `X` and `edge` move by design
+  (`docs-kit/DESIGN.md`, "Tags and versions").
 
 **Recovery is roll-forward only.**
 
