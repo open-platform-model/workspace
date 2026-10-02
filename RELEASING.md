@@ -440,10 +440,10 @@ Check each line with `gh api repos/open-platform-model/<repo>` before relying on
 ### Merge settings (core, catalog_opm, library, opm-operator, cli)
 
 - [ ] `squash_merge_commit_title` is `PR_TITLE`
-- [ ] Precondition for the next line (Phase 0): mention-guard treats PR bodies as blocking in these repos. On
-  every `edited` event it checks for bare `@word`, body lines matching `^[A-Za-z]+\(`, and lines
-  matching `^BREAKING[ -]CHANGE:`, and its README is updated (the `.github` change
-  `guard-squashed-pr-bodies`). Today it treats bot bodies as advisory because no repo squashes
+- [ ] Precondition for the next line (Phase 0): mention-guard treats PR bodies as blocking in
+  these repos. On every `edited` event it checks for bare `@word`, body lines matching
+  `^[A-Za-z]+\(`, and lines matching `^BREAKING[ -]CHANGE:`, and its README is updated (the
+  `.github` change `guard-squashed-pr-bodies`). Today it treats bot bodies as advisory because no repo squashes
   the body.
 - [ ] `squash_merge_commit_message` is `PR_BODY` (owner decision 2026-10-02: kept over `BLANK`, so
   the moved-pins table and the hidden title marker reach `main`). From then on every PR body
