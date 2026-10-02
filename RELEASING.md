@@ -148,7 +148,7 @@ public, never on the release event itself.
 | Upstream | Notify runs after | Dispatches to |
 | --- | --- | --- |
 | `core` | `publish-cue` | catalog_opm, library |
-| `catalog_opm` | the publish step of `publish-cue` (verification moves to its own job) | library, opm-operator, cli |
+| `catalog_opm` | the publish step of `publish-cue` (its `join-release-cascade` moves verification to its own job) | library, opm-operator, cli |
 | `library` | `release-please` (the job gains a `release` step id and outputs) | opm-operator, cli |
 | `opm-operator` | `publish-release` (draft published, assets attached) | cli |
 | `cli` | `goreleaser` and `publish-templates`, also on the manual recovery path | catalog_opm, opm-operator (release-tool only) |
@@ -285,7 +285,7 @@ No cascade PR auto-merges. Release PRs are always merged by a human.
 
 | Gate | Where | Rule | Status |
 | --- | --- | --- | --- |
-| G1 release-pin gate | Release PRs in catalog_opm, library, opm-operator, cli | Fails on a Go `replace`, a pseudo-version or untagged OPM Go pin, a `-0.dev.` pin in a shipped `cue.mod`, a tracked `cue.mod/local-module.cue`, or (cli) `PinnedOperatorVersion` not matching the image tag in `install.yaml` | Required: a step in the required job, binding once the ruleset requires that job |
+| G1 release-pin gate | Release PRs in catalog_opm, library, opm-operator, cli | Fails on a Go `replace`, a pseudo-version or untagged OPM Go pin, a `-0.dev.` pin in a shipped `cue.mod` (library: in any tracked `cue.mod`), a tracked `cue.mod/local-module.cue`, or (cli) `PinnedOperatorVersion` not matching the image tag in `install.yaml` | Required: a step in the required job, binding once the ruleset requires that job |
 | G2 `cascade/freshness` | Commit status on the release PR head | Fails when a shipped pin is behind the newest published upstream, unless `.cascade-hold` holds it | Warning; required once `.cascade-hold` exists and two weeks live show no false alarms |
 | G3 `cascade/settled` | Commit status on the release PR head | Warns while an upstream has an open `fix(deps)` cascade PR, or a pending release PR that contains a merged `fix(deps)` cascade | Warning; required after two weeks without false alarms |
 | G4 `e2e-verified` label | cli release PRs | When `PinnedOperatorVersion` changed since the last cli tag, the PR needs the label | Interim; retired once the embedded-operator e2e CI job lands |
@@ -309,8 +309,10 @@ No cascade PR auto-merges. Release PRs are always merged by a human.
 
 ## Cascade files
 
-Three repo-root files steer the cascade. `.cascade-frozen` and `.cascade-hold` are optional: a repo
-without one behaves as if it were empty. `.opm-cli-version` is required wherever CI reads it.
+Three repo-root files steer the cascade. Each is optional for the cascade: a repo without
+`.cascade-frozen` or `.cascade-hold` behaves as if it were empty, and a repo without
+`.opm-cli-version` has no opm CLI pin to move. A repo whose CI reads `.opm-cli-version` must keep
+it.
 
 ### .opm-cli-version
 
@@ -320,8 +322,10 @@ One line: the opm CLI tag that CI and the release job install.
 v1.0.0-beta.4
 ```
 
-CI reads it with `echo "OPM_CLI_VERSION=$(cat .opm-cli-version)" >> "$GITHUB_ENV"`. Keeping the pin
-out of `.github/workflows/` means the cascade App never edits a workflow file. The workspace
+How CI reads it is up to each repo. One example is
+`echo "OPM_CLI_VERSION=$(cat .opm-cli-version)" >> "$GITHUB_ENV"`; a repo may instead read and
+check the value inline in its install step, as opm-operator does. Keeping the pin out of
+`.github/workflows/` means the cascade App never edits a workflow file. The workspace
 `task deps:pins:opm-cli` writes this file in every repo that has one.
 
 ### .cascade-frozen
@@ -463,7 +467,7 @@ workflow pushes only to `release-please--*` branches and `.github` only to `tag-
 | Phase | Content | Gate to leave it |
 | --- | --- | --- |
 | 0 Settings | The owner applies "Owner settings" and creates two sandbox repos. Open checks: a one-commit PR squashes under `PR_TITLE` and releases; cross-repo dispatch and App-pushed PR CI work; a bot merge of `main` that changes a workflow file, and the App's "Update branch", are accepted without the Workflows permission; the org Actions policy lets org repos call `.github` reusable workflows; the owner's pull-request-only bypass really merges a PR past a red required check | every checkbox ticked, except a required check whose job a later change adds (it becomes required when that change lands) |
-| 1 Prepare | The changes below, in parallel. Drift is caught up by hand first: cli operator embed to the newest published operator (`fix(deps)`), opm CLI pins (`ci(deps)`), and library's four opm catalog `v4.4.2` `cue.mod` files (`modules/opm_platform`, `testdata/modules/web_app`, `testdata/parity`, `testdata/parity/opm_platform`) as `test(fixtures)` | each change merged |
+| 1 Prepare | The changes below, in parallel. Drift is caught up by hand first: cli operator embed to the newest published operator (`fix(deps)`), opm CLI pins (`ci(deps)`; catalog_opm and opm-operator catch up inside their `prepare-release-cascade`, so do not run `task deps:pins:opm-cli` against them before those merge), and library's four opm catalog `v4.4.2` `cue.mod` files (`modules/opm_platform`, `testdata/modules/web_app`, `testdata/parity`, `testdata/parity/opm_platform`) as `test(fixtures)` | each change merged |
 | 2 Tasks | The shared resolver in `.github`, then `task deps:cascade` in each repo | a run on `main` exits 3; a run against an older pin produces the expected diff |
 | 3 Wiring | Shared notify and receive workflows in `.github`, then each repo joins with `CASCADE_DRY_RUN=true` | one full two-repo sandbox cycle green; dry runs show the expected diffs |
 
@@ -478,10 +482,10 @@ Environments and the merge settings.
 | Phase | Repo | Change | Content | Depends on |
 | --- | --- | --- | --- | --- |
 | 1 | workspace | branch `docs/release-cascade` (PR, no OpenSpec) | this file, `AGENTS.md`, the commit-skill exception, `task deps:pins:opm-cli` writes `.opm-cli-version` | none |
-| 1 | catalog_opm | `prepare-release-cascade` | G1 step; `.opm-cli-version` read by the workflows; verification split out of `publish-cue`; branch publish skips `deps/**` | workspace doc |
+| 1 | catalog_opm | `prepare-release-cascade` | G1 step; `.opm-cli-version` read by the workflows, and the opm CLI caught up; branch publish skips `deps/**` | workspace doc |
 | 1 | library | `prepare-release-cascade` | G1 step; release job outputs; `docs` hidden from the changelog | workspace doc |
 | 1 | library | `derive-fixture-versions` | parity and core test literals derive from one source each, so a bump touches only constants and `cue.mod` files; library's `.cascade-frozen` records the deliberate old pins | none |
-| 1 | opm-operator | `prepare-release-cascade` | G1 step; `.opm-cli-version`; Dependabot ignores OPM Go modules; `docs` hidden | workspace doc |
+| 1 | opm-operator | `prepare-release-cascade` | G1 step; `.opm-cli-version`, and the opm CLI caught up; Dependabot ignores OPM Go modules; `docs` hidden | workspace doc |
 | 1 | cli | `prepare-release-cascade` | G1 step with the embed check; G4 rule; Dependabot ignore; labels in `labels.yml`; `docs` hidden | workspace doc |
 | 1 | cli | `bump-stale-testdata-pins` | bump five stale testdata trees (six `cue.mod` files) once as `test(fixtures)`; record the deliberate old pins in `.cascade-frozen` | none |
 | 1 | cli | `add-embedded-operator-e2e-job` | cluster-backed e2e CI job; retires G4 | none |
@@ -489,6 +493,6 @@ Environments and the merge settings.
 | 2 | `.github` | `add-cascade-resolver` | the shared resolver every `deps:cascade` calls; a CI check for `.github` | none |
 | 2 | each of the four | `add-deps-cascade-task` | `deps:cascade`, its title and body tasks | `add-cascade-resolver`; its `prepare-release-cascade`; library also `derive-fixture-versions`; cli also `bump-stale-testdata-pins` |
 | 3 | `.github` | `add-release-cascade-workflows` | notify and receive workflows, the sandbox cycle | `add-cascade-resolver`, Phase 0 settings |
-| 3 | core and the four | `join-release-cascade` | notify job; receiver (not in core, which pins nothing OPM-owned) | `add-release-cascade-workflows`, the repo's `add-deps-cascade-task` and `prepare-release-cascade` |
+| 3 | core and the four | `join-release-cascade` | notify job (catalog_opm first splits "Verify the published build" out of `publish-cue`, so a verify finding cannot suppress notify); receiver (not in core, which pins nothing OPM-owned) | `add-release-cascade-workflows`, the repo's `add-deps-cascade-task` and `prepare-release-cascade` |
 | 5 | the four | `require-pin-freshness-gate` | make G2 required, then G3 the same way | `join-release-cascade`, `.cascade-hold` in place, two weeks live without false alarms |
 | 5 | workspace | rewire `deps:update` (PR) | root tasks call each repo's `deps:cascade` | every `add-deps-cascade-task` |
