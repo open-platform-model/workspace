@@ -93,7 +93,7 @@ FAKE_GIT_FAIL=1 lt_case "explicit version: verified, git not consulted" 0 1.0.0-
 codes "v1.0.0-alpha.21/opm-linux-amd64.tar.gz 404"
 lt_case "explicit version missing an asset is refused" 1 "" "v1.0.0-alpha.21 is not a consumable cli release" cli v "$assets" v1.0.0-alpha.21
 
-tags opm-v4.4.4 k8s-v1.0.0-beta.1; codes
+tags opm-v4.4.4; codes
 lt_case "no matching tags" 1 "" "no v* release tags in cli" cli v "$assets"
 FAKE_GIT_FAIL=1 lt_case "git failure" 1 "" "cannot list v* tags of cli" cli v "$assets"
 lt_case "usage: asset list required" 1 "" "usage:" cli v
@@ -108,34 +108,33 @@ lt_case "bounded walk: 11 broken releases" 1 "" "none of the newest 10 v* tags" 
 check "bounded walk probes exactly 10 candidates" "$(($(wc -l <"$CURL_LOG") == 10 ? 0 : 1))"
 
 # platform-pins.sh mirrors cli/hack/platform/cue.mod/module.cue, offline.
-mkpp() { # $1 dir, $2 opm dep key, $3 opm v, $4 k8s v
+mkpp() { # $1 dir, $2 opm dep key, $3 opm v
   mkdir -p "$1/cli/hack/platform/cue.mod" "$1/opm-operator/config/samples"
-  printf 'deps: {\n\t"%s": {\n\t\tv: "%s"\n\t}\n\t"opmodel.dev/catalogs/k8s@v1": {\n\t\tv: "%s"\n\t}\n}\n' \
-    "$2" "$3" "$4" >"$1/cli/hack/platform/cue.mod/module.cue"
-  local y='    opmodel.dev/catalogs/opm@v4:\n      version: "4.0.0"\n    opmodel.dev/catalogs/k8s@v1:\n      # comment line\n      version: "1.0.0-alpha.1"\n'
+  printf 'deps: {\n\t"%s": {\n\t\tv: "%s"\n\t}\n}\n' \
+    "$2" "$3" >"$1/cli/hack/platform/cue.mod/module.cue"
+  local y='    opmodel.dev/catalogs/opm@v4:\n      # comment line\n      version: "4.0.0"\n'
   printf 'spec:\n  registry:\n%b' "$y" >"$1/cli/hack/kind-platform.yaml"
   printf 'spec:\n  registry:\n%b' "$y" >"$1/opm-operator/config/samples/opmodel.dev_v1alpha1_platform.yaml"
 }
 : >"$CURL_LOG"; tags
-mkpp "$root/pp1" opmodel.dev/catalogs/opm@v4 v4.6.0-alpha.1 v1.0.0
+mkpp "$root/pp1" opmodel.dev/catalogs/opm@v4 v4.6.0-alpha.1
 (cd "$root/pp1" && FAKE_GIT_FAIL=1 "$pp" >/dev/null 2>&1); check "platform-pins succeeds offline" $?
 for f in cli/hack/kind-platform.yaml opm-operator/config/samples/opmodel.dev_v1alpha1_platform.yaml; do
-  grep -qF 'version: "4.6.0-alpha.1"' "$root/pp1/$f" && grep -qF 'version: "1.0.0"' "$root/pp1/$f"
+  grep -qF 'version: "4.6.0-alpha.1"' "$root/pp1/$f"
   check "platform-pins mirrors cue.mod into $f" $?
 done
 check "platform-pins makes no HTTP call" "$(($(wc -c <"$CURL_LOG") == 0 ? 0 : 1))"
-mkpp "$root/pp2" opmodel.dev/catalogs/opm@v5 v5.0.0 v1.0.0
+mkpp "$root/pp2" opmodel.dev/catalogs/opm@v5 v5.0.0
 cp "$root/pp2/cli/hack/kind-platform.yaml" "$root/before.yaml"
 (cd "$root/pp2" && "$pp" >/dev/null 2>"$root/err"); rc=$?
 [ "$rc" != 0 ] && grep -qF 'does not pin opmodel.dev/catalogs/opm@v4' "$root/err" \
   && cmp -s "$root/before.yaml" "$root/pp2/cli/hack/kind-platform.yaml"
 check "major moved in cue.mod: refuse, YAML untouched" $?
-mkpp "$root/pp4" opmodel.dev/catalogs/opm@v4 v4.6.0 v1.0.0
-sed -i 's#catalogs/k8s@v1:#catalogs/k8s@v2:#' "$root/pp4/cli/hack/kind-platform.yaml"
+mkpp "$root/pp4" opmodel.dev/catalogs/opm@v4 v4.6.0
+sed -i 's#catalogs/opm@v4:#catalogs/opm@v3:#' "$root/pp4/cli/hack/kind-platform.yaml"
 (cd "$root/pp4" && "$pp" >/dev/null 2>"$root/err"); rc=$?
-[ "$rc" != 0 ] && grep -qF '1 key(s) not found' "$root/err" \
-  && grep -qF 'version: "4.6.0"' "$root/pp4/opm-operator/config/samples/opmodel.dev_v1alpha1_platform.yaml"
-check "YAML missing a key: fails, other keys still synced" $?
+[ "$rc" != 0 ] && grep -qF '1 key(s) not found' "$root/err"
+check "YAML missing a key: fails" $?
 mkdir -p "$root/pp3"
 (cd "$root/pp3" && "$pp" >/dev/null 2>"$root/err"); rc=$?
 [ "$rc" != 0 ] && grep -qF 'not found (is cli checked out?)' "$root/err"

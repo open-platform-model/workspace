@@ -134,8 +134,7 @@ excluded for now. The personal `emil-jacero/opm-modules` repo is out of scope an
 
 **Release branches (policy; automation lands before GA).** A released minor that needs a
 backport or a docs fix gets a maintenance branch `release/<tag-prefix>vX.Y` (core `release/v2.0`;
-library, cli and opm-operator `release/v1.0`; catalog_opm `release/opm-v4.4` and
-`release/k8s-v1.0`).
+library, cli and opm-operator `release/v1.0`; catalog_opm `release/opm-v4.4`).
 
 - **Version-line rule:** `release/vX.Y` is cut only when `main`'s next release is `X.(Y+1).0` or
   higher; after the cut, `main` never releases an `X.Y.*` version.
@@ -296,7 +295,7 @@ any missing org repo.
 | --- | --- | --- | --- |
 | `core/` | Canonical OPM schema, pure CUE, `opmodel.dev/core@v2` on `main`. Published contract every downstream consumes; enforce additive evolution only. Never `cue mod publish` by hand. | `AGENTS.md`, `openspec/config.yaml` (acts as constitution), `SPEC.md`, `src/INDEX.md`. Load the `core-schema-edit` skill before editing `*.cue`. | `task fmt`, `task vet`, `task generate:index`, `task check` |
 | `library/` | OPM kernel: Go reference runtime (load, validate, match, execute) embedded by `cli` and `opm-operator`. Accepts exactly `Module`, `ModuleInstance`, `Platform`. No process model, logging, or shell. | `AGENTS.md`, `CONSTITUTION.md`, `README.md`, `migrations/README.md`, `openspec/config.yaml` | see `Taskfile.yml` (`task cue:deps:update` for deps) |
-| `catalog_opm/` | The two first-party catalogs, each its own CUE module typed against `opmodel.dev/core@v2` and released separately: `opm/` is `opmodel.dev/catalogs/opm@v4`, the abstraction catalog (bare names; stable line), and `k8s/` is `opmodel.dev/catalogs/k8s@v1`, the raw Kubernetes catalog (native APIs carried through as-is, last resort; prerelease line). Resources, traits, blueprints, transformers. Contract members file under `<module>/<kind>/<apiVersion>/`; transformers flat under `<module>/transformers/`. Neither catalog depends on the other (`task vet:layering`). CI-only publish. Catalog work goes through OpenSpec (`catalog-change` schema, no specs artifact). | `AGENTS.md`, `openspec/config.yaml` (acts as constitution), `Taskfile.yml` | `task fmt`, `task vet`, `task tidy`, `task check` |
+| `catalog_opm/` | The first-party catalog, a CUE module typed against `opmodel.dev/core@v2`: `opm/` is `opmodel.dev/catalogs/opm@v4`, the abstraction catalog (bare names; stable line). Resources, traits, blueprints, transformers. Contract members file under `<module>/<kind>/<apiVersion>/`; transformers flat under `<module>/transformers/`. CI-only publish. Catalog work goes through OpenSpec (`catalog-change` schema, no specs artifact). | `AGENTS.md`, `openspec/config.yaml` (acts as constitution), `Taskfile.yml` | `task fmt`, `task vet`, `task tidy`, `task check` |
 | `cli/` | Go CLI (`opm`): module/catalog/instance/operator/registry commands, workflow runner, publishing. | `AGENTS.md`, `CONSTITUTION.md`, `openspec/config.yaml` | `task build`, `task fmt`, `task lint`, `task test`, `task check` |
 | `opm-operator/` | Kubebuilder controller and CRDs. | `AGENTS.md`, `CONSTITUTION.md`, `openspec/config.yaml` | `make fmt`, `make vet`, `make lint`, `make test`, `make build` |
 | `opm/` | Meta project: internal docs, specs, benchmarks. No Taskfile. | `AGENTS.md`, `CONSTITUTION.md` | none |
@@ -327,8 +326,7 @@ OpenSpec archives are historical records, not broken links. Re-clone only for a 
 
 `core`, `catalog_opm` and `modules` carry the OPM v2 generation on `main` and a protected,
 patch-only v1 maintenance line on the `v1` branch (`modules` also has a frozen `v0_legacy`).
-In `catalog_opm`, `main` ships the stable `opmodel.dev/catalogs/opm@v4` line and the prerelease
-`opmodel.dev/catalogs/k8s@v1` line; its `v1` branch is the retired v1 line of the opm catalog.
+In `catalog_opm`, `main` ships the stable `opmodel.dev/catalogs/opm@v4` line; its `v1` branch is the retired v1 line of the opm catalog.
 **Check which branch you are on before editing**; each long-lived branch's `AGENTS.md` has a
 "Branch model" section stating what may land there. Never merge `main` into a maintenance branch.
 Releases are release-please-owned; never tag or publish by hand, and never move or delete a
@@ -359,7 +357,7 @@ push.
 | --- | --- |
 | Core schema (`#Module`, `#Component`, `#Resource`, `#Trait`, `#Blueprint`, `#Platform`, `#ModuleInstance`, `#ComponentTransformer`); "schema change" | `core/` (`catalog_opm/` only if it is a catalog primitive built on top) |
 | Kernel, loader, validator, matcher, transformer execution, compile pipeline | `library/` |
-| Catalog resources/traits/blueprints/transformers, raw Kubernetes catalog (`opmodel.dev/catalogs/k8s@v1`), CUE catalog conventions | `catalog_opm/` |
+| Catalog resources/traits/blueprints/transformers, CUE catalog conventions | `catalog_opm/` |
 | CLI commands, workflow runner, publishing, registry-facing CLI behavior | `cli/` |
 | Controller, CRDs, operator runtime | `opm-operator/` |
 | Internal specs, architecture docs, benchmarks; "update spec for X" | `opm/` |

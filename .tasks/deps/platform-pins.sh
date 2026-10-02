@@ -16,7 +16,6 @@
 set -euo pipefail
 mirror=cli/hack/platform/cue.mod/module.cue
 opm_key='opmodel.dev/catalogs/opm@v4'
-k8s_key='opmodel.dev/catalogs/k8s@v1'
 
 # Bare version (no leading v) that $mirror pins for dep key $1; exits when absent.
 pinned() {
@@ -27,8 +26,7 @@ pinned() {
   echo "${v#v}"
 }
 opm=$(pinned "$opm_key")
-k8s=$(pinned "$k8s_key")
-printf "==> Platform pins (from %s): catalogs/opm \033[0;32m%s\033[0m, catalogs/k8s \033[0;32m%s\033[0m\n" "$mirror" "$opm" "$k8s"
+printf "==> Platform pins (from %s): catalogs/opm \033[0;32m%s\033[0m\n" "$mirror" "$opm"
 
 # Rewrite the `version: "..."` that follows a given subscription key line.
 # $1 file, $2 key regex, $3 version. Reports old -> new, or unchanged. A missing
@@ -47,13 +45,11 @@ bump_after_key() {
 }
 
 bump_after_key opm-operator/config/samples/opmodel.dev_v1alpha1_platform.yaml "${opm_key}:" "$opm"
-bump_after_key opm-operator/config/samples/opmodel.dev_v1alpha1_platform.yaml "${k8s_key}:" "$k8s"
 
 # Same document shape, same scalar subscriptions: the kind dev cluster's
 # Platform singleton. It must agree with cli/hack/platform/, or the operator
 # and the CLI tests resolve different catalog builds from the same dev cluster.
 bump_after_key cli/hack/kind-platform.yaml "${opm_key}:" "$opm"
-bump_after_key cli/hack/kind-platform.yaml "${k8s_key}:" "$k8s"
 
 if [ "$missing" -gt 0 ]; then
   printf "platform-pins: %d key(s) not found; the YAML no longer matches the keys here (major moved?)\n" "$missing" >&2
