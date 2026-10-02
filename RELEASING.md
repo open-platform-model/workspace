@@ -257,18 +257,31 @@ key.
 
 ### Labels
 
-| Label | Meaning | Set by |
-| --- | --- | --- |
-| `deps-cascade` | This is the repo's cascade PR | bot |
-| `deps-cascade:conflict` | The bot could not merge `main`; a human must | bot |
-| `deps-cascade:hold` | A human is working on the branch; the bot does not push | human |
-| `deps-cascade:breaking` | An upstream in this bump announced a breaking change | bot |
-| `need-human-review` | The library core bump moved `DefaultSchemaModule`; review the glue before merging | bot, always on a library core bump |
-| `e2e-verified` | A human ran the cli e2e suite against this embed (G4) | human |
+Every cascade label has one colour and one description in every repo:
 
-In the cli, every label above is declared in `.github/labels.yml`, together with the five labels
-other bots set: `autorelease: pending`, `autorelease: tagged` (release-please), and `dependencies`,
-`go`, `github_actions` (Dependabot). The label sync there deletes undeclared labels.
+| Label | Colour | Description | Set by |
+| --- | --- | --- | --- |
+| `deps-cascade` | `0366d6` | Rolling upstream-pin PR opened by the release cascade | bot |
+| `deps-cascade:conflict` | `b60205` | The bot could not merge main into this cascade PR; a human resolves it | bot |
+| `deps-cascade:hold` | `fbca04` | A human is working on this cascade PR; the bot does not push | human |
+| `deps-cascade:breaking` | `d93f0b` | An upstream changelog in this PR announces a breaking change | bot |
+| `need-human-review` | `e99695` | Glue edits a human must review before merging | bot, always on a library core bump (the bump moved `DefaultSchemaModule`) |
+| `e2e-verified` | `0e8a16` | A human ran task test:e2e against the embedded operator (G4) | human |
+
+`deps-cascade:hold` is about the PR, not about pins: it means a human is pushing to `deps/cascade`.
+Holding a pin back is `.cascade-hold` (see "Cascade files").
+
+In the cli, `.github/labels.yml` declares every label above, so the cascade receiver must not create
+labels there. The cli label sync deletes undeclared labels, so `labels.yml` also declares the five
+labels other bots set, with their live values:
+
+| Label | Colour | Description | Set by |
+| --- | --- | --- | --- |
+| `autorelease: pending` | `ededed` | none | release-please |
+| `autorelease: tagged` | `ededed` | none | release-please |
+| `dependencies` | `0366d6` | Pull requests that update a dependency file | Dependabot |
+| `go` | `16e2e2` | Pull requests that update go code | Dependabot |
+| `github_actions` | `000000` | Pull requests that update GitHub Actions code | Dependabot |
 
 ### What each repo's task moves
 
@@ -288,7 +301,7 @@ No cascade PR auto-merges. Release PRs are always merged by a human.
 | G1 release-pin gate | Release PRs in catalog_opm, library, opm-operator, cli | Fails on a Go `replace`, a pseudo-version or untagged OPM Go pin, a `-0.dev.` pin in a shipped `cue.mod` (library: in any tracked `cue.mod`), a tracked `cue.mod/local-module.cue`, or (cli) `PinnedOperatorVersion` not matching the image tag in `install.yaml` | Required: a step in the required job, binding once the ruleset requires that job |
 | G2 `cascade/freshness` | Commit status on the release PR head | Fails when a shipped pin is behind the newest published upstream, unless `.cascade-hold` holds it | Warning; required once `.cascade-hold` exists and two weeks live show no false alarms |
 | G3 `cascade/settled` | Commit status on the release PR head | Warns while an upstream has an open `fix(deps)` cascade PR, or a pending release PR that contains a merged `fix(deps)` cascade | Warning; required after two weeks without false alarms |
-| G4 `e2e-verified` label | cli release PRs | When `PinnedOperatorVersion` changed since the last cli tag, the PR needs the label | Interim; retired once the embedded-operator e2e CI job lands |
+| G4 `e2e-verified` label | cli release PRs (check `G4 operator-embed evidence`) | When `PinnedOperatorVersion` changed since the last cli tag, the PR needs the label | Interim; retires only when all three retirement conditions below hold |
 
 - **G1 detection.** G1 runs when `${{ github.head_ref || github.ref_name }}` starts with
   `release-please--`. core and catalog_opm dispatch release-PR CI with `workflow_dispatch`, where
@@ -299,8 +312,12 @@ No cascade PR auto-merges. Release PRs are always merged by a human.
   result never goes stale because an upstream published later.
 - **G4 replacement.** The cli change `add-embedded-operator-e2e-job` adds a CI job: a kind cluster,
   the embedded operator, a seeded Platform and the e2e suite. It runs on PRs that touch
-  `internal/operator/` or `templates/`, on cascade PRs, and on release PRs. When it lands, G4 is
-  retired.
+  `internal/operator/` or `templates/`, on cascade PRs, and on release PRs. Its check is
+  `E2E (kind, embedded operator)`.
+- **G4 retirement.** G4 retires only when all three hold (owner decision 2026-10-02):
+  `add-embedded-operator-e2e-job` has merged, its check has passed on at least one cli release PR,
+  and that check is required in the cli ruleset. Retiring G4 is then its own cli change,
+  `retire-g4-operator-embed-evidence`. Until all three hold, G4 stays.
 - **Enforcement needs rulesets.** library, opm-operator and cli have no required CI checks besides
   the org mention-guard today. Until the rulesets in "Owner settings" exist, every gate there is
   advisory.
@@ -387,7 +404,8 @@ know why not.
 - In catalog_opm, the release PR gains an identity-advance commit; wait for it before merging.
 - On the cli release PR, if `PinnedOperatorVersion` changed since the last cli tag, run
   `task test:e2e` on its head and add `e2e-verified` (G4). Remove the label if the operator pin
-  moves again before merge. This step ends when the e2e CI job replaces G4.
+  moves again before merge. This step ends when `retire-g4-operator-embed-evidence` retires G4
+  (see "Gates").
 
 ### Dependabot PRs
 
@@ -435,7 +453,9 @@ Check each line with `gh api repos/open-platform-model/<repo>` before relying on
   - catalog_opm: `Validate catalog` (carries G1)
   - library: `Go tests` (carries G1, from its `prepare-release-cascade`)
   - opm-operator: `Lint` (carries G1, from its `prepare-release-cascade`)
-  - cli: `Lint` (carries G1) and `G4 operator-embed evidence` until G4 retires
+  - cli: `Lint` (carries G1), and `G4 operator-embed evidence` until
+    `retire-g4-operator-embed-evidence` retires G4; once `add-embedded-operator-e2e-job` has
+    merged and its check has been green, also `E2E (kind, embedded operator)`
   - `.github`: the CI check its `add-cascade-resolver` change adds, once that change lands
 - [ ] Force pushes and branch deletion blocked
 - [ ] The owner has a bypass in pull-request-only mode: they can merge a PR past a red check, never
@@ -488,8 +508,9 @@ Environments and the merge settings.
 | 1 | opm-operator | `prepare-release-cascade` | G1 step; `.opm-cli-version`, and the opm CLI caught up; Dependabot ignores OPM Go modules; `docs` hidden | workspace doc |
 | 1 | cli | `prepare-release-cascade` | G1 step with the embed check; G4 rule; Dependabot ignore; labels in `labels.yml`; `docs` hidden | workspace doc |
 | 1 | cli | `bump-stale-testdata-pins` | bump five stale testdata trees (six `cue.mod` files) once as `test(fixtures)`; record the deliberate old pins in `.cascade-frozen` | none |
-| 1 | cli | `add-embedded-operator-e2e-job` | cluster-backed e2e CI job; retires G4 | none |
+| 1 | cli | `add-embedded-operator-e2e-job` | cluster-backed e2e CI job, check `E2E (kind, embedded operator)`; the first of the three G4 retirement conditions | none |
 | 0 | `.github` | `guard-squashed-pr-bodies` (after `openspec init` there) | mention-guard blocks on PR bodies in the five releasing repos (bare `@word`, `word(` lines, `BREAKING CHANGE:` lines) on every `edited` event; README updated | none; must land before `PR_BODY` is set |
+| after 1 | cli | `retire-g4-operator-embed-evidence` (working name) | remove the G4 check, its label rule and the runbook step | `add-embedded-operator-e2e-job` merged, its check passed on at least one cli release PR, and that check required (see "Gates") |
 | 2 | `.github` | `add-cascade-resolver` | the shared resolver every `deps:cascade` calls; a CI check for `.github` | none |
 | 2 | each of the four | `add-deps-cascade-task` | `deps:cascade`, its title and body tasks | `add-cascade-resolver`; its `prepare-release-cascade`; library also `derive-fixture-versions`; cli also `bump-stale-testdata-pins` |
 | 3 | `.github` | `add-release-cascade-workflows` | notify and receive workflows, the sandbox cycle | `add-cascade-resolver`, Phase 0 settings |
