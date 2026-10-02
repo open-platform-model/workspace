@@ -297,7 +297,8 @@ any missing org repo.
 | `cli/` | Go CLI (`opm`): module/catalog/instance/operator/registry commands, workflow runner, publishing. | `AGENTS.md`, `CONSTITUTION.md`, `openspec/config.yaml` | `task build`, `task fmt`, `task lint`, `task test`, `task check` |
 | `opm-operator/` | Kubebuilder controller and CRDs. | `AGENTS.md`, `CONSTITUTION.md`, `openspec/config.yaml` | `make fmt`, `make vet`, `make lint`, `make test`, `make build` |
 | `opm/` | Meta project: internal docs, specs, benchmarks. No Taskfile. | `AGENTS.md`, `CONSTITUTION.md` | none |
-| `opmodel.dev/` | Public docs site (Hugo + Hextra v0.13.0, neutral skin; built and served in Docker) plus Go `docgen` that generates schema (from `core`) and CLI (from `cli`) reference. Pages come from every repo's `docs/site/` in the page dialect (`STYLE.md` "Site Pages"); the build fails on a dialect error, a broken link or a missing page. Site work goes through OpenSpec (`docs-site-change` schema, no specs artifact). | `AGENTS.md`, `CONSTITUTION.md`, `openspec/config.yaml` | `task generate`, `task serve` (http://127.0.0.1:1313/), `task build`, `task ci`, `task check` |
+| `opmodel.dev/` | Public docs site (Hugo + Hextra v0.13.0, neutral skin; built and served in Docker). It generates nothing: pages, generated reference included, come from every repo's `docs/site/` in the page dialect (`STYLE.md` "Site Pages"); the build fails on a dialect error, a broken link or a missing page. Site work goes through OpenSpec (`docs-site-change` schema, no specs artifact). | `AGENTS.md`, `CONSTITUTION.md`, `openspec/config.yaml` | `task serve` (http://127.0.0.1:1313/), `task build`, `task ci`, `task check` |
+| `docs-kit/` | Design only (`DESIGN.md`, 2026-10-02): `opm-docs`, one Go tool that builds each repo's docs (CUE, CRD, cobra, Go and authored pages) into a signed OCI bundle in that repo's CI and pulls bundles for the site; phase 1 is the opm catalog's Catalogs tab. Nothing built yet. | `DESIGN.md`, `README.md` | none yet |
 | `enhancements/` | Canonical home for OPM enhancement proposals: umbrellas and design intent for changes landing in any repo. `NNNN/` entries (seven mandatory docs, decisions carrying `Kind` and numbered `Requirements`, `config.yaml` sole metadata, pure-CUE `schemas/target.cue`), each carrying its own append-only `delivery.yaml` log of landed changes (forecast plans retired). Status `draft -> accepted`, with `rejected` and `superseded` terminal (both always archived); delivery is DERIVED from each entry's `delivery.yaml` log via `task delivery`, never stored as a flag; `history` append-only; decision numbers immutable. | `AGENTS.md`, `README.md`, `INDEX.md`, `schema.cue` | `task list`, `task show ID=NNNN`, `task new SLUG=.. TITLE=..`, `task vet` (hard gate), `task check`, `task index`, `task graph`, `task delivery:*` |
 | `modules/` | Workspace OPM module definitions (CUE apps deployable to environments). `main` = OPM v2 fleet (CI publishes each module when its release PR merges); `v1` = live v1 fleet; `v0_legacy` = frozen v0 fleet against the retired `catalog` repo (GHCR, not checked out). Follow CUE conventions from `catalog_opm/`. Module work goes through OpenSpec (`module-change` schema, no specs artifact). | `AGENTS.md`, `openspec/config.yaml` (acts as constitution), `DESIGN_PATTERNS.md` | `task fmt`, `task vet`, `task tidy`, `task check` |
 | `opm-suite-installer/` | **Proof of concept, bash only.** One OCI container image carrying the `opm` CLI, a bash entrypoint and locally bundled OPM modules, run as a `Batch/Job` to install a suite of applications into the cluster it runs in. Input via job args and env. Milestone 1 is podinfo. Assumes an existing cluster with the operator and CRDs; publishes no CUE module, only an image. Own repo at `github.com/open-platform-model/opm-suite-installer`. | `AGENTS.md`, `openspec/config.yaml` (acts as constitution), `README.md`, `FINDINGS.md` | `task lint`, `task build`, `task check` |
@@ -359,7 +360,8 @@ push.
 | CLI commands, workflow runner, publishing, registry-facing CLI behavior | `cli/` |
 | Controller, CRDs, operator runtime | `opm-operator/` |
 | Internal specs, architecture docs, benchmarks; "update spec for X" | `opm/` |
-| Public docs site, generated schema/CLI reference, operator/admin docs; "update docs site" | `opmodel.dev/` (generator logic lives in `cli/` or `opmodel.dev/cmd/docgen/`) |
+| Public docs site, operator/admin docs; "update docs site" | `opmodel.dev/` (generated reference is built in the repo that owns its source) |
+| Docs bundles, `opm-docs`, publishing docs as OCI artifacts | `docs-kit/` |
 | Enhancement, proposal, design intent spanning repos | `enhancements/` (never create entries in `library/enhancements/001-007`; cite them as `legacy:NNN`) |
 | OPM module definitions, app fleet (business and enterprise, `opmodel.dev/modules/*`) | `modules/` |
 | Installer image, bundling modules into one OCI image, install-as-a-Job | `opm-suite-installer/` |
@@ -371,7 +373,7 @@ push.
   (public site)?
 - "update OPM" without `opm/` or `opmodel.dev/`.
 - The change spans multiple repos, or touches both a source repo and its derived output
-  (`core`/`cli` vs generated docs in `opmodel.dev/`).
+  (`core`/`cli` and the pages the site assembles from them).
 - The target is still unclear after reading this file.
 
 Never guess: wrong repo = wasted work. One question beats editing the wrong repo.
