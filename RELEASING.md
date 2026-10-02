@@ -7,7 +7,7 @@ that moves the pins. A human still reviews and merges every PR.
 
 This file is the design and the policy. Each repo's OpenSpec changes implement it and cite it as
 "workspace RELEASING.md, section <name>". The decisions here were made by the owner on
-2026-10-01. No enhancement backs them.
+2026-10-01 and 2026-10-02. No enhancement backs them.
 
 What the cascade fixes is lag: pins forgotten for days, an embedded operator one release behind,
 76 hand-made bump commits in two months. What it does not fix is a break that no pin change
@@ -108,6 +108,13 @@ The type follows what ships. The full type rule lives in the workspace commit sk
 - `docs` stops releasing in library, opm-operator and cli once each repo's
   `prepare-release-cascade` change hides it. Until then a docs-only merge there still cuts a
   release and starts a cascade.
+- Hiding `docs` delays docs on opmodel.dev unless the site builds those repos' docs from the
+  release-branch head, as it already does for core and catalog_opm. Today it builds library and
+  opm-operator docs at what the newest cli tag pins, and cli docs at that tag. The opmodel.dev
+  change `build-docs-from-branch-head` moves library, opm-operator and cli to the branch head (owner
+  decision 2026-10-02), and the docs-hiding section of each `prepare-release-cascade` merges only
+  after it. Until then a docs-only fix in those repos reaches opmodel.dev only with the next
+  release.
 
 ## Bump rule
 
@@ -433,14 +440,15 @@ Check each line with `gh api repos/open-platform-model/<repo>` before relying on
 ### Merge settings (core, catalog_opm, library, opm-operator, cli)
 
 - [ ] `squash_merge_commit_title` is `PR_TITLE`
-- [ ] Precondition for the next line: mention-guard treats PR bodies as blocking in these repos. On
+- [ ] Precondition for the next line (Phase 0): mention-guard treats PR bodies as blocking in these repos. On
   every `edited` event it checks for bare `@word`, body lines matching `^[A-Za-z]+\(`, and lines
   matching `^BREAKING[ -]CHANGE:`, and its README is updated (the `.github` change
   `guard-squashed-pr-bodies`). Today it treats bot bodies as advisory because no repo squashes
   the body.
-- [ ] `squash_merge_commit_message` is `PR_BODY`. From then on every PR body reaches `main` and
-  release-please parses it: human `## Notes` edits, release-please bodies and Dependabot bodies
-  (see "Runbook").
+- [ ] `squash_merge_commit_message` is `PR_BODY` (owner decision 2026-10-02: kept over `BLANK`, so
+  the moved-pins table and the hidden title marker reach `main`). From then on every PR body
+  reaches `main` and release-please parses it: human `## Notes` edits, release-please bodies and
+  Dependabot bodies (see "Runbook").
 - [ ] Squash merge only: merge commits and rebase merges disabled
 - [ ] `delete_branch_on_merge` is `true`
 - [ ] `allow_auto_merge` stays `false`
@@ -486,16 +494,16 @@ workflow pushes only to `release-please--*` branches and `.github` only to `tag-
 
 | Phase | Content | Gate to leave it |
 | --- | --- | --- |
-| 0 Settings | The owner applies "Owner settings" and creates two sandbox repos. Open checks: a one-commit PR squashes under `PR_TITLE` and releases; cross-repo dispatch and App-pushed PR CI work; a bot merge of `main` that changes a workflow file, and the App's "Update branch", are accepted without the Workflows permission; the org Actions policy lets org repos call `.github` reusable workflows; the owner's pull-request-only bypass really merges a PR past a red required check | every checkbox ticked, except a required check whose job a later change adds (it becomes required when that change lands) |
+| 0 Settings | `.github` `guard-squashed-pr-bodies` lands first; then the owner applies "Owner settings" and creates two sandbox repos. Open checks: a one-commit PR squashes under `PR_TITLE` and releases; cross-repo dispatch and App-pushed PR CI work; a bot merge of `main` that changes a workflow file, and the App's "Update branch", are accepted without the Workflows permission; the org Actions policy lets org repos call `.github` reusable workflows; the owner's pull-request-only bypass really merges a PR past a red required check | every checkbox ticked, except a required check whose job a later change adds (it becomes required when that change lands) |
 | 1 Prepare | The changes below, in parallel. Drift is caught up by hand first: cli operator embed to the newest published operator (`fix(deps)`), opm CLI pins (`ci(deps)`; catalog_opm and opm-operator catch up inside their `prepare-release-cascade`, so do not run `task deps:pins:opm-cli` against them before those merge), and library's four opm catalog `v4.4.2` `cue.mod` files (`modules/opm_platform`, `testdata/modules/web_app`, `testdata/parity`, `testdata/parity/opm_platform`) as `test(fixtures)` | each change merged |
 | 2 Tasks | The shared resolver in `.github`, then `task deps:cascade` in each repo | a run on `main` exits 3; a run against an older pin produces the expected diff |
 | 3 Wiring | Shared notify and receive workflows in `.github`, then each repo joins with `CASCADE_DRY_RUN=true` | one full two-repo sandbox cycle green; dry runs show the expected diffs |
+| 4 Live | Clear the dry-run flag repo by repo; watch every run | two weeks live |
+| 5 Harden | Make G2 and G3 required; rewire the workspace `task deps:update` | no false alarms in two weeks |
 
 Phase 1 does not wait for Phase 0: its changes may merge first, and their gates stay advisory
 until the rulesets exist. Phase 0 gates Phase 3, because the wiring needs the App, the
 Environments and the merge settings.
-| 4 Live | Clear the dry-run flag repo by repo; watch every run | two weeks live |
-| 5 Harden | Make G2 and G3 required; rewire the workspace `task deps:update` | no false alarms in two weeks |
 
 ### Changes
 
@@ -503,10 +511,11 @@ Environments and the merge settings.
 | --- | --- | --- | --- | --- |
 | 1 | workspace | branch `docs/release-cascade` (PR, no OpenSpec) | this file, `AGENTS.md`, the commit-skill exception, `task deps:pins:opm-cli` writes `.opm-cli-version` | none |
 | 1 | catalog_opm | `prepare-release-cascade` | G1 step; `.opm-cli-version` read by the workflows, and the opm CLI caught up; branch publish skips `deps/**` | workspace doc |
-| 1 | library | `prepare-release-cascade` | G1 step; release job outputs; `docs` hidden from the changelog | workspace doc |
+| 1 | library | `prepare-release-cascade` | G1 step; release job outputs; `docs` hidden from the changelog | workspace doc; the `docs` section also opmodel.dev `build-docs-from-branch-head` |
 | 1 | library | `derive-fixture-versions` | parity and core test literals derive from one source each, so a bump touches only constants and `cue.mod` files; library's `.cascade-frozen` records the deliberate old pins | none |
-| 1 | opm-operator | `prepare-release-cascade` | G1 step; `.opm-cli-version`, and the opm CLI caught up; Dependabot ignores OPM Go modules; `docs` hidden | workspace doc |
-| 1 | cli | `prepare-release-cascade` | G1 step with the embed check; G4 rule; Dependabot ignore; labels in `labels.yml`; `docs` hidden | workspace doc |
+| 1 | opm-operator | `prepare-release-cascade` | G1 step; `.opm-cli-version`, and the opm CLI caught up; Dependabot ignores OPM Go modules; `docs` hidden | workspace doc; the `docs` section also opmodel.dev `build-docs-from-branch-head` |
+| 1 | cli | `prepare-release-cascade` | G1 step with the embed check; G4 rule; Dependabot ignore; labels in `labels.yml`; `docs` hidden | workspace doc; the `docs` section also opmodel.dev `build-docs-from-branch-head` |
+| 1 | opmodel.dev | `build-docs-from-branch-head` | build library, opm-operator and cli docs from the release-branch head, as for core and catalog_opm, so hiding `docs` does not delay docs fixes | none |
 | 1 | cli | `bump-stale-testdata-pins` | bump five stale testdata trees (six `cue.mod` files) once as `test(fixtures)`; record the deliberate old pins in `.cascade-frozen` | none |
 | 1 | cli | `add-embedded-operator-e2e-job` | cluster-backed e2e CI job, check `E2E (kind, embedded operator)`; the first of the three G4 retirement conditions | none |
 | 0 | `.github` | `guard-squashed-pr-bodies` (after `openspec init` there) | mention-guard blocks on PR bodies in the five releasing repos (bare `@word`, `word(` lines, `BREAKING CHANGE:` lines) on every `edited` event; README updated | none; must land before `PR_BODY` is set |
