@@ -41,14 +41,15 @@ The type follows **what ships**, not what kind of edit it was:
 - Never use `chore` for a bump, and never mix a shipped bump and a fixture bump in one commit.
   One exception: in a `deps-cascade` PR (the rolling `deps/cascade` bot PR), the shipped bump
   and the test, fixture or release-tool edits in that PR squash together as one `fix(deps)`
-  commit. The rule holds
-  everywhere else. See the workspace `RELEASING.md`, "Bump rule".
+  commit. The rule holds everywhere else. See the workspace `RELEASING.md`, "Bump rule".
 - An opm CLI pin bump (`.opm-cli-version`, or a CI workflow literal) is `ci(deps): ...`: a
   release tool, never shipped.
 
 Escape hatch: a forced version. In the five releasing repos (`core`, `library`, `catalog_opm`,
-`cli`, `opm-operator`) the squash message is `BLANK`, so only the PR title reaches `main` and no
-body footer (`Release-As:`, `BREAKING CHANGE:`) does. There a breaking change is `!` in the PR
+`cli`, `opm-operator`) the squash message is `BLANK` once the owner applies workspace
+`RELEASING.md` "Owner settings"; until then the repos still squash with `COMMIT_MESSAGES`, so
+merge with an explicit empty body (`gh pr merge --squash --body ''`). Under `BLANK` only the PR
+title reaches `main` and no body footer (`Release-As:`, `BREAKING CHANGE:`) does. There a breaking change is `!` in the PR
 title, and a forced version is `release-as` in `release-please-config.json`, set by a normal PR
 and removed by the next PR once that release is cut. Elsewhere a `Release-As: x.y.z` footer in the
 final commit on `main` still forces a release from an otherwise hidden commit.
@@ -70,8 +71,9 @@ final commit on `main` still forces a release from an otherwise hidden commit.
   it. In a multi-package repo the footer applies to every package whose paths the commit touches,
   so keep the carrier commit inside the one package that should move.
 - No body line may start with an identifier followed by `(` (e.g. `word(`): release-please drops
-  the whole commit, footer included. This still bites any local commit that reaches `main` with
-  its body, such as one pushed straight to `main` in a repo without the PR-only ruleset.
+  the whole commit, footer included. This bites any commit body that reaches `main`: today every
+  PR commit body in a repo still squashing with `COMMIT_MESSAGES`, and later any local commit
+  pushed straight to `main` in a repo without the PR-only ruleset.
 - GA: set `prerelease: false`. The next releasable commit that touches the package drops the
   suffix (`X.Y.Z-beta.N` to `X.Y.Z`) with no `Release-As`. A hidden-only flip (`chore`) opens no
   release PR, so each package needs a visible carrier commit, in dependency order.
