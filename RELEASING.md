@@ -222,8 +222,9 @@ release until a human merges it.
 ### Additive commits
 
 Bot commits are added, never rewritten, once a human has pushed to the branch. A human can push
-fix commits to `deps/cascade` and the next bot run keeps them. Because the squash message is the PR
-body (see "Owner settings"), branch commit messages never reach `main`.
+fix commits to `deps/cascade` and the next bot run keeps them. The squash message is `BLANK` (see
+"Owner settings"), so only the PR title reaches `main`: branch commit messages and the PR body
+never do.
 
 ### Title from diff class
 
@@ -236,12 +237,11 @@ The bot computes the PR title from the whole diff against `main`, human commits 
 The title names the moved pins, for example `fix(deps): bump core to v2.0.0-beta.2 and opm catalog
 to 4.4.5`. With four or more moved pins it becomes `fix(deps): bump 4 upstream pins`. The body is
 regenerated on each run. It holds a table of moved pins, the triggering releases, warnings, a
-`## Notes` section the bot never edits, and a hidden title marker. The bot lints every branch
-commit message and the body: no bare `@word`, no body line starting with `word(`, no line starting
-with `BREAKING CHANGE:`, `BREAKING-CHANGE:` or `Release-As:`, and no trailer except
-`Co-Authored-By: Claude <noreply@anthropic.com>`. The body becomes the squash message, so an
-upstream changelog quoted in it must not carry a footer release-please would act on. Human edits to
-the body are checked by mention-guard (see "Owner settings").
+`## Notes` section the bot never edits, and a hidden title marker. The bot lints its own commit
+messages, the title and the body for a bare `@word`, which mention-guard fails and GitHub turns
+into a ping. Human commits on `deps/cascade` are not linted by the bot; mention-guard still checks
+them. Under the `BLANK` squash message only the title reaches `main`, so a `BREAKING CHANGE:` or
+`Release-As:` line in a quoted upstream changelog, or in any commit body, does nothing.
 
 ### Concurrency
 
@@ -416,10 +416,9 @@ know why not.
 
 ### Dependabot PRs
 
-Under `PR_BODY` squash (see "Owner settings") a Dependabot PR body becomes the commit message on
-`main`. Its third-party release notes can carry `@user` mentions, `word(` lines or a
-`BREAKING CHANGE:` line that release-please would act on. Clear or trim the body to a one-line
-summary before merging.
+Under the `BLANK` squash message (see "Owner settings") a Dependabot PR squashes to its title
+alone, so its third-party release notes never reach `main`. Check only the title's type before
+merging.
 
 ### Stop switches
 
@@ -440,15 +439,14 @@ Check each line with `gh api repos/open-platform-model/<repo>` before relying on
 ### Merge settings (core, catalog_opm, library, opm-operator, cli)
 
 - [ ] `squash_merge_commit_title` is `PR_TITLE`
-- [ ] Precondition for the next line (Phase 0): mention-guard treats PR bodies as blocking in
-  these repos. On every `edited` event it checks for bare `@word`, body lines matching
-  `^[A-Za-z]+\(`, and lines matching `^BREAKING[ -]CHANGE:`, and its README is updated (the
-  `.github` change `guard-squashed-pr-bodies`). Today it treats bot bodies as advisory because no
-  repo squashes the body.
-- [ ] `squash_merge_commit_message` is `PR_BODY` (owner decision 2026-10-02: kept over `BLANK`, so
-  the moved-pins table and the hidden title marker reach `main`). From then on every PR body
-  reaches `main` and release-please parses it: human `## Notes` edits, release-please bodies and
-  Dependabot bodies (see "Runbook").
+- [ ] `squash_merge_commit_message` is `BLANK` (owner decision 2026-10-02, reversing `PR_BODY`):
+  a squash commit carries only the PR title. A ruleset-required mention-guard ignores the `edited`
+  event, so a PR-body guard could not see an edit made after a green run. Under `BLANK`:
+  - a breaking change is `!` in the PR title (`fix(deps)!:`); a `BREAKING CHANGE:` footer in the
+    body or a commit never reaches `main`
+  - a forced version is `release-as` in `release-please-config.json`, set by a normal PR and
+    removed by the next PR once that release is cut (it pins every later release while it stays);
+    a `Release-As:` footer never reaches `main`
 - [ ] Squash merge only: merge commits and rebase merges disabled
 - [ ] `delete_branch_on_merge` is `true`
 - [ ] `allow_auto_merge` stays `false`
@@ -494,7 +492,7 @@ workflow pushes only to `release-please--*` branches and `.github` only to `tag-
 
 | Phase | Content | Gate to leave it |
 | --- | --- | --- |
-| 0 Settings | `.github` `guard-squashed-pr-bodies` lands first; then the owner applies "Owner settings" and creates two sandbox repos. Open checks: a one-commit PR squashes under `PR_TITLE` and releases; cross-repo dispatch and App-pushed PR CI work; a bot merge of `main` that changes a workflow file, and the App's "Update branch", are accepted without the Workflows permission; the org Actions policy lets org repos call `.github` reusable workflows; the owner's pull-request-only bypass really merges a PR past a red required check | every checkbox ticked, except a required check whose job a later change adds (it becomes required when that change lands) |
+| 0 Settings | The owner applies "Owner settings" and creates two sandbox repos. Open checks: a one-commit PR squashes under `PR_TITLE` and releases; cross-repo dispatch and App-pushed PR CI work; a bot merge of `main` that changes a workflow file, and the App's "Update branch", are accepted without the Workflows permission; the org Actions policy lets org repos call `.github` reusable workflows; the owner's pull-request-only bypass really merges a PR past a red required check | every checkbox ticked, except a required check whose job a later change adds (it becomes required when that change lands) |
 | 1 Prepare | The changes below, in parallel. Drift is caught up by hand first: cli operator embed to the newest published operator (`fix(deps)`), opm CLI pins (`ci(deps)`; catalog_opm and opm-operator catch up inside their `prepare-release-cascade`, so do not run `task deps:pins:opm-cli` against them before those merge), and library's four opm catalog `v4.4.2` `cue.mod` files (`modules/opm_platform`, `testdata/modules/web_app`, `testdata/parity`, `testdata/parity/opm_platform`) as `test(fixtures)` | each change merged |
 | 2 Tasks | The shared resolver in `.github`, then `task deps:cascade` in each repo | a run on `main` exits 3; a run against an older pin produces the expected diff |
 | 3 Wiring | Shared notify and receive workflows in `.github`, then each repo joins with `CASCADE_DRY_RUN=true` | one full two-repo sandbox cycle green; dry runs show the expected diffs |
@@ -518,9 +516,8 @@ Environments and the merge settings.
 | 1 | opmodel.dev | `build-docs-from-branch-head` | build library, opm-operator and cli docs from the release-branch head, as for core and catalog_opm, so hiding `docs` does not delay docs fixes | none |
 | 1 | cli | `bump-stale-testdata-pins` | bump five stale testdata trees (six `cue.mod` files) once as `test(fixtures)`; record the deliberate old pins in `.cascade-frozen` | none |
 | 1 | cli | `add-embedded-operator-e2e-job` | cluster-backed e2e CI job, check `E2E (kind, embedded operator)`; the first of the three G4 retirement conditions | none |
-| 0 | `.github` | `guard-squashed-pr-bodies` (after `openspec init` there) | mention-guard blocks on PR bodies in the five releasing repos (bare `@word`, `word(` lines, `BREAKING CHANGE:` lines) on every `edited` event; README updated | none; must land before `PR_BODY` is set |
 | after 1 | cli | `retire-g4-operator-embed-evidence` (working name) | remove the G4 check, its label rule and the runbook step | `add-embedded-operator-e2e-job` merged, its check passed on at least one cli release PR, and that check required (see "Gates") |
-| 2 | `.github` | `add-cascade-resolver` | the shared resolver every `deps:cascade` calls; a CI check for `.github` | none |
+| 2 | `.github` | `add-cascade-resolver` (runs `openspec init` there first) | the shared resolver every `deps:cascade` calls; a CI check for `.github` | none |
 | 2 | each of the four | `add-deps-cascade-task` | `deps:cascade`, its title and body tasks | `add-cascade-resolver`; its `prepare-release-cascade`; library also `derive-fixture-versions`; cli also `bump-stale-testdata-pins` |
 | 3 | `.github` | `add-release-cascade-workflows` | notify and receive workflows, the sandbox cycle | `add-cascade-resolver`, Phase 0 settings |
 | 3 | core and the four | `join-release-cascade` | notify job (catalog_opm first splits "Verify the published build" out of `publish-cue`, so a verify finding cannot suppress notify); receiver (not in core, which pins nothing OPM-owned) | `add-release-cascade-workflows`, the repo's `add-deps-cascade-task` and `prepare-release-cascade` |
