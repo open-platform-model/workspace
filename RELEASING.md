@@ -369,7 +369,9 @@ frozen:
 ```
 
 Every entry needs a reason. An old pin without an entry is stale: `deps:cascade` moves it where the
-task covers that path, otherwise a human bumps it.
+task covers that path, otherwise a human bumps it. A version literal a test never resolves from a
+registry (a synthetic skew value, such as opm-operator's `v4.0.1` in
+`internal/reconcile/warnings_test.go`) is not a pin and needs no entry.
 
 ### .cascade-hold
 
