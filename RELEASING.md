@@ -315,8 +315,11 @@ No cascade PR auto-merges. Release PRs are always merged by a human.
   `head_ref` is empty, so the `ref_name` fallback is needed.
 - **G1 placement.** G1 runs as a step inside an existing required job, never as a new job. A skipped
   job reports as passing, a failing step does not.
-- **G2 and G3 freshness.** Every receiver run refreshes both statuses on any open release PR. A
-  result never goes stale because an upstream published later.
+- **G2 and G3 freshness.** Every receiver run refreshes both statuses on any open release PR, so
+  an upstream that publishes later is picked up by the next run. When the release PR head moves
+  (a merged cascade PR, catalog_opm's identity-advance commit), the statuses are missing until the
+  next dispatch or the daily sweep; run `deps-cascade.yml` with `workflow_dispatch` to refresh them
+  at once.
 - **G4 replacement.** The cli change `add-embedded-operator-e2e-job` adds a CI job: a kind cluster,
   the embedded operator, a seeded Platform and the e2e suite. It runs on PRs that touch
   `internal/operator/` or `templates/`, on cascade PRs, and on release PRs. Its check is
@@ -408,7 +411,8 @@ deadline, not a mute button.
 
 Merge tier by tier: core, then catalog_opm and library, then opm-operator, then the cli. Before
 merging a release PR, check that `cascade/freshness` and `cascade/settled` are green, or that you
-know why not.
+know why not. If they are missing on the current head, run `deps-cascade.yml` with
+`workflow_dispatch` first.
 
 - In catalog_opm, the release PR gains an identity-advance commit; wait for it before merging.
 - On the cli release PR, if `PinnedOperatorVersion` changed since the last cli tag, run
