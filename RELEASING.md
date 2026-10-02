@@ -78,17 +78,17 @@ Where the pins live today:
 | --- | --- | --- | --- |
 | `catalog_opm` | shipped | `opm/cue.mod/module.cue` and `k8s/cue.mod/module.cue`; both core pins stay equal | core |
 | `catalog_opm` | release-tool | `.opm-cli-version` (today `OPM_CLI_VERSION` in three workflows) | opm CLI |
-| `library` | shipped | `DefaultSchemaModule` in `opm/schema/loader.go`, mirrored by `DefaultCoreVersion` in `opm/internal/registrytest/registrytest.go` | core |
+| `library` | shipped | `DefaultSchemaModule` in `opm/schema/loader.go`; `DefaultCoreVersion` in `opm/internal/registrytest/registrytest.go` derives from it once `derive-fixture-versions` lands (a hand-kept mirror until then) | core |
 | `library` | test | the `cue.mod` files under `modules/`, `testdata/modules/`, `testdata/parity/`, `testdata/cue.mod`, `testdata/render/**`, and the version literals in kernel tests | core, opm catalog |
-| `library` | frozen | the old-core literals in `opm/kernel/render_collision_test.go`, `opm/kernel/render_core_floor_test.go`, `opm/errors/coretooold_test.go`; the opm catalog `4.0.1` literals in `opm/helper/platformmodule/closure_test.go` | none |
+| `library` | frozen | every deliberate old literal in test code, listed with a reason in library's `.cascade-frozen` (created by `derive-fixture-versions`), among them the old-core literals in `opm/kernel/render_collision_test.go`, `opm/kernel/render_core_floor_test.go`, `opm/errors/coretooold_test.go` and the opm catalog `4.0.1` literals in `opm/helper/platformmodule/closure_test.go` | none |
 | `opm-operator` | shipped | `go.mod` (`github.com/open-platform-model/library`) | library |
 | `opm-operator` | test | `config/samples/`, `test/fixtures/` (including `CatalogVersion()` in `test/fixtures/catalog.go`) | core, catalogs |
 | `opm-operator` | release-tool | `.opm-cli-version` (today `go install .../cli/cmd/opm@` in four workflows) | opm CLI |
 | `cli` | shipped | `go.mod` (library) | library |
 | `cli` | shipped | `PinnedOperatorVersion` in `internal/operator/manifest.go` plus `internal/operator/dist/install.yaml`, always moved together | opm-operator |
 | `cli` | shipped | `templates/{minimal,standard,advanced}/cue.mod/module.cue`, plus each template's own version | core, opm catalog |
-| `cli` | test | `hack/platform/cue.mod`, `hack/kind-platform.yaml`, `examples/cue.mod`, `tests/fixtures/`, `tests/e2e/testdata/operator-owned/` | core, catalogs |
-| `cli` | frozen | the older-core platform and `collisionCorePin` in `tests/e2e/instance_build_test.go` | none |
+| `cli` | test | `hack/platform/cue.mod`, `hack/kind-platform.yaml`, `examples/cue.mod`, `tests/fixtures/` (including `tests/fixtures/valid/{simple-module,module-with-debug-values}/cue.mod`), `tests/e2e/testdata/operator-owned/`, and the `cue.mod` files under `internal/instinit/testdata/initvalues/`, `internal/workflow/render/testdata/skip-unprovided/`, `tests/e2e/testdata/duplicate-identities/` and `tests/integration/module-apply/testdata/` | core, catalogs |
+| `cli` | frozen | in `tests/e2e/instance_build_test.go`, the older-core platform, `collisionCorePin` and `olderCatalogPin` (`opmodel.dev/catalogs/opm@v4`); the old core pin in `internal/cmd/platform/check_test.go`; all listed in cli's `.cascade-frozen` (created by `bump-stale-testdata-pins`) | none |
 
 core pins nothing OPM-owned and has no receiver.
 
@@ -275,9 +275,9 @@ other bots set: `autorelease: pending`, `autorelease: tagged` (release-please), 
 | Repo | Shipped | Test and release-tool |
 | --- | --- | --- |
 | `catalog_opm` | core in `opm/` and `k8s/`, both to the same version | `.opm-cli-version` |
-| `library` | `DefaultSchemaModule` and `DefaultCoreVersion`, labelled `need-human-review` | test `cue.mod` files and the parity catalog; other test literals derive from these after `derive-fixture-versions` |
+| `library` | `DefaultSchemaModule` only, labelled `need-human-review`; `DefaultCoreVersion` and the other test literals derive from it after `derive-fixture-versions` | test `cue.mod` files and the parity catalog |
 | `opm-operator` | `go get` library and `go mod tidy` | samples, `test/fixtures/catalog.go`, fixtures, `.opm-cli-version` |
-| `cli` | `go get` library; `task operator:sync` to the newest published operator; templates and their versions | `hack/platform`, `hack/kind-platform.yaml`, `examples`, the podinfo fixture |
+| `cli` | `go get` library; `task operator:sync` to the newest published operator; templates and their versions | `hack/platform`, `hack/kind-platform.yaml`, `examples`, the podinfo fixture, and the six testdata `cue.mod` files that `bump-stale-testdata-pins` brings current (`tests/fixtures/valid/simple-module`, `tests/fixtures/valid/module-with-debug-values`, `internal/instinit/testdata/initvalues`, `internal/workflow/render/testdata/skip-unprovided`, `tests/e2e/testdata/duplicate-identities`, `tests/integration/module-apply/testdata`) |
 
 No cascade PR auto-merges. Release PRs are always merged by a human.
 
@@ -483,11 +483,11 @@ Environments and the merge settings.
 | 1 | library | `derive-fixture-versions` | parity and core test literals derive from one source each, so a bump touches only constants and `cue.mod` files; library's `.cascade-frozen` records the deliberate old pins | none |
 | 1 | opm-operator | `prepare-release-cascade` | G1 step; `.opm-cli-version`; Dependabot ignores OPM Go modules; `docs` hidden | workspace doc |
 | 1 | cli | `prepare-release-cascade` | G1 step with the embed check; G4 rule; Dependabot ignore; labels in `labels.yml`; `docs` hidden | workspace doc |
-| 1 | cli | `bump-stale-testdata-pins` | bump five stale testdata trees once as `test(fixtures)`; record the deliberate old pins in `.cascade-frozen` | none |
+| 1 | cli | `bump-stale-testdata-pins` | bump five stale testdata trees (six `cue.mod` files) once as `test(fixtures)`; record the deliberate old pins in `.cascade-frozen` | none |
 | 1 | cli | `add-embedded-operator-e2e-job` | cluster-backed e2e CI job; retires G4 | none |
 | 0 | `.github` | `guard-squashed-pr-bodies` (after `openspec init` there) | mention-guard blocks on PR bodies in the five releasing repos (bare `@word`, `word(` lines, `BREAKING CHANGE:` lines) on every `edited` event; README updated | none; must land before `PR_BODY` is set |
 | 2 | `.github` | `add-cascade-resolver` | the shared resolver every `deps:cascade` calls; a CI check for `.github` | none |
-| 2 | each of the four | `add-deps-cascade-task` | `deps:cascade`, its title and body tasks | `add-cascade-resolver`; its `prepare-release-cascade`; library also `derive-fixture-versions` |
+| 2 | each of the four | `add-deps-cascade-task` | `deps:cascade`, its title and body tasks | `add-cascade-resolver`; its `prepare-release-cascade`; library also `derive-fixture-versions`; cli also `bump-stale-testdata-pins` |
 | 3 | `.github` | `add-release-cascade-workflows` | notify and receive workflows, the sandbox cycle | `add-cascade-resolver`, Phase 0 settings |
 | 3 | core and the four | `join-release-cascade` | notify job; receiver (not in core, which pins nothing OPM-owned) | `add-release-cascade-workflows`, the repo's `add-deps-cascade-task` and `prepare-release-cascade` |
 | 5 | the four | `require-pin-freshness-gate` | make G2 required, then G3 the same way | `join-release-cascade`, `.cascade-hold` in place, two weeks live without false alarms |
