@@ -395,8 +395,10 @@ deadline, not a mute button.
    Subjects should still be Conventional; they never reach `main`.
 1. On `deps-cascade:conflict`, run `git merge origin/main` locally, resolve, push, and remove the
    label.
-1. If the upstream is broken for this repo, add an entry to `.cascade-hold` on `main` with a reason
-   and an expiry, then close the PR. Closing alone only skips until the next upstream release.
+1. If the upstream is broken for this repo, land an entry in `.cascade-hold` on `main` by PR, with
+   a reason and an expiry, then close the cascade PR. Closing alone lasts only until the next
+   receiver run (at most a day, the daily sweep); `deps-cascade:hold` on the PR or a
+   `.cascade-hold` entry is what stops it.
 1. On "new major available", do the crossing as an ordinary hand-made PR.
 1. On `need-human-review` (library core bump), check the glue against the new core before merging.
 1. Merge with `gh pr merge <N> --squash --match-head-commit <sha>`, where the SHA is the head you
