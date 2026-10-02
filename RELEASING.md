@@ -266,7 +266,8 @@ key.
 
 ### Labels
 
-Every cascade label has one colour and one description in every repo:
+Every cascade label has one colour and one description in every repo (`e2e-verified` exists only
+in the cli):
 
 | Label | Colour | Description | Set by |
 | --- | --- | --- | --- |
@@ -444,7 +445,8 @@ From smallest to largest:
 
 These are owner-only GitHub settings. The cascade does not work without them: a one-commit bot PR
 would squash under its commit subject, which release-please ignores, so nothing would release.
-Check each line with `gh api repos/open-platform-model/<repo>` before relying on it.
+Check each line before relying on it: `gh api repos/open-platform-model/<repo>` for the merge
+settings, and `.../rules/branches/main` and `.../environments` for rulesets and Environments.
 
 ### Merge settings (core, catalog_opm, library, opm-operator, cli)
 
