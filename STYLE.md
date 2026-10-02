@@ -89,12 +89,14 @@ Site pages are the `opmodel.dev/` site content and every page under a repository
   ```
 
   Never write `> [!NOTE] Title`, a foldable `> [!NOTE]-`, or a Starlight `:::note[...]` block.
+
+  A direction note, which names future work and the enhancement that designs it (0018:D3), is a `NOTE` alert whose bold title line is `**Direction**`; the site gives it its own label and style.
 - **Figures are `{{< opm/<name> >}}` shortcodes.** Write each on its own line, with a blank line before and after, no parameters and no closing tag. The seven names are `module-to-cluster`, `roles-and-artifacts`, `component-to-objects`, `where-things-live`, `three-ways-to-deploy`, `helm-and-opm` and `one-trait-any-provider`. No other shortcode appears in a `docs/site/` page. Hugo expands shortcodes even inside code fences, so to show one in a code block, write `{{</* opm/<name> */>}}`.
 - **Order is `weight`.** A page's place in its section comes from the optional front-matter key `weight: N`, a positive integer: lower first, then title. Never write a `sidebar:` block.
 - **A section page is `_index.md`**, never `index.md`: Hugo reads `index.md` as a leaf bundle that swallows its siblings. A section page declares no `type`.
 - **No MDX.** Pages are `.md` files: no `.mdx`, no `import ... from` lines and no component tags such as `<ModuleToCluster />`.
 - **Front matter allows four keys.** `title` and `description` (one line) are required on every page. `type` (`tutorial`, `how-to`, `explanation` or `reference`) is required on a leaf page. `weight` is optional. Every other key is forbidden, including `sidebar`, `slug`, `draft` and `aliases`.
-- **Links are root-absolute with a trailing slash**, and this replaces the relative-link rule above: `[What OPM is](/docs/start/what-is-opm/)`, with an optional `#fragment`. Never write relative links, `.md` links, version-prefixed links (`/v1.0/docs/...`) or raw `href=`/`src=` attributes. The site build fails on a link to a missing page.
+- **Links are root-absolute with a trailing slash**, and this replaces the relative-link rule above: `[What OPM is](/docs/start/what-is-opm/)`, with an optional `#fragment`. An enhancement is linked the same way, at `/enhancements/<NNNN>/` or one of its documents, `/enhancements/<NNNN>/<document>/` (`problem`, `design`, `decisions`, `graduation`, `risks`, `operational` or `questions`), and nothing else under `/enhancements`. Never write relative links, `.md` links, version-prefixed links (`/v1.0/docs/...`) or raw `href=`/`src=` attributes. The site build fails on a link to a missing page.
 - **No images.** Figures are drawn in the site engine (0018:D14); write no `![...]` and no `<img>`.
 - **Every code fence carries a language tag**; use `text` for plain text.
 
