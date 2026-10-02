@@ -141,8 +141,8 @@ upstream.
   adoption there is a hand-made major crossing to `opm@v5`.
 - **Test and release-tool pins never release.** A cascade PR that moves only test pins is
   `test(fixtures)`. One that moves only the opm CLI pin is `ci(deps)`.
-- **A cascade PR may mix classes.** The shipped bump and the test or fixture edits it forces squash
-  together as one `fix(deps)` commit. This is the one exception to the commit skill's "never mix a
+- **A cascade PR may mix classes.** The shipped bump and the test, fixture or release-tool edits in
+  the same PR squash together as one `fix(deps)` commit. This is the one exception to the commit skill's "never mix a
   shipped bump and a fixture bump" rule. It holds only in a `deps-cascade` PR.
 
 ## The cascade
@@ -231,8 +231,9 @@ never do.
 
 The bot computes the PR title from the whole diff against `main`, human commits included:
 
-1. `fix(deps): ...` when any shipped-class path changed
-1. `test(fixtures): ...` when only test-class paths changed
+1. `fix(deps): ...` when any shipped-class path, or any path outside the test and release-tool
+   classes, changed
+1. `test(fixtures): ...` when test-class paths changed and no shipped path did
 1. `ci(deps): ...` when only release-tool pins changed
 
 The title names the moved pins, for example `fix(deps): bump core to v2.0.0-beta.2 and opm catalog
