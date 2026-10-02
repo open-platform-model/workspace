@@ -1,9 +1,9 @@
 # Open Platform Model workspace
 
 The shared layer for working on [Open Platform Model](https://opmodel.dev) across all its repos at
-once: agent instructions (`AGENTS.md`, `.claude/`), the workspace `Taskfile.yml` and `.tasks/`,
-and the prose style guide (`STYLE.md`). Each OPM repo is cloned beside these files as its own git
-checkout and is gitignored here.
+once: agent instructions (`AGENTS.md`, `.claude/`), the workspace `Taskfile.yml` and `.tasks/`, the
+prose style guide (`STYLE.md`) and the release cascade design (`RELEASING.md`). Each OPM repo is
+cloned beside these files as its own git checkout and is gitignored here.
 
 ## Getting started
 

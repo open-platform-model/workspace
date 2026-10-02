@@ -9,7 +9,7 @@ tasks:
       - .tasks/deps/platform-pins.sh
 
   opm-cli:
-    desc: "Bump the opm CLI release CI installs in catalog_opm, modules, opm-operator and (when checked out) opm-modules workflows (core has none). Defaults to cli's newest published release whose tarball and checksums.txt download anonymously; VERSION=vX.Y.Z is verified the same way"
+    desc: "Bump the opm CLI release CI installs in catalog_opm, modules, opm-operator and (when checked out) opm-modules (core has none): the repo-root .opm-cli-version file where one exists, and any legacy workflow literal. Defaults to cli's newest published release whose tarball and checksums.txt download anonymously; VERSION=vX.Y.Z is verified the same way"
     preconditions:
       - sh: command -v git >/dev/null 2>&1
         msg: "git is required"

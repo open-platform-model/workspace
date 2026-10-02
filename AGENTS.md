@@ -129,7 +129,7 @@ excluded for now. The personal `emil-jacero/opm-modules` repo is out of scope an
 - A draft release with missing assets is still mutable: re-run the release workflow (or its
   dispatch recovery path).
 
-**Release branches (policy; automation lands in Phase 2).** A released minor that needs a
+**Release branches (policy; automation lands before GA).** A released minor that needs a
 backport or a docs fix gets a maintenance branch `release/<tag-prefix>vX.Y` (core `release/v2.0`;
 library, cli and opm-operator `release/v1.0`; catalog_opm `release/opm-v4.4` and
 `release/k8s-v1.0`).
@@ -147,9 +147,9 @@ library, cli and opm-operator `release/v1.0`; catalog_opm `release/opm-v4.4` and
 - A docs-only fix in `core` or `catalog_opm` cuts no release: `opmodel.dev` builds their docs from
   the release branch head (from `main` while that line has no release branch) and records the SHA
   in every build (`site/versions.conf`, line mode).
-- **Phase 2 (before GA), not built yet:** the cut action, release workflows that run on
-  `release/**`, and PR checks on `release/**`, proven in `release-flow-sandbox` (including a cut
-  from a tag older than the change and the main-versus-branch version collision). No repo
+- **Release-branch automation (before GA), not built yet:** the cut action, release workflows that
+  run on `release/**`, and PR checks on `release/**`, proven in `release-flow-sandbox` (including a
+  cut from a tag older than the change and the main-versus-branch version collision). No repo
   supports release branches today; do not create one.
 
 **Enforcement (target state).** Org rulesets are the real control, all with empty bypass lists
@@ -251,7 +251,7 @@ Root `Taskfile.yml` is the only workspace-wide automation. Run from the workspac
 | `task deps:pins:fixtures` | Bump the CUE deps of the published test fixtures (`cli/tests/fixtures`, `opm-operator/test/fixtures`), advance each changed fixture's declared version (`opm module version set`) and re-pin every consumer, whose core and catalog pins follow the fixture, in one pass (operator modulepackages, `moduleinstance.yaml` and `config/samples`, cli `tests/e2e/testdata/operator-owned` and `examples` cue.mod; text only, checked against CUE's own resolution by `hack/fixtures.sh consumers` in PR CI). One PR per repo: PR CI seeds its registry from the tree, so nothing waits for GHCR. Separate from `deps:update` because a fixture is a published artifact: merging republishes it. | After a core or catalog release, when the fixtures should exercise it |
 | `task fixtures:lint` | Check that the shared fixture flow (`hack/fixtures.sh`, `tests/fixtures/fixtures.go` + test) is byte-identical between `cli` and `opm-operator`. Each repo's CI runs from a standalone clone, so the files are copies, not a shared module. | After editing either copy |
 | `task docs:lint` | Check that `.tasks/doc-check.sh` (the doc-comment length gate) is byte-identical between `core` and `catalog_opm`. Same copy-not-module situation as the fixture flow. | After editing either copy |
-| `task deps:pins:opm-cli [VERSION=vX.Y.Z]` | Bump the pinned `opm` CLI release CI installs in `catalog_opm`, `modules`, `opm-operator` and (when checked out) `opm-modules` workflows (`core` pins none). Defaults to `cli`'s newest published release whose tarball and `checksums.txt` download anonymously (drafts and asset-less releases are skipped); an explicit `VERSION` is verified the same way. | After a `cli` release |
+| `task deps:pins:opm-cli [VERSION=vX.Y.Z]` | Bump the pinned `opm` CLI release CI installs in `catalog_opm`, `modules`, `opm-operator` and (when checked out) `opm-modules` (`core` pins none): the repo-root `.opm-cli-version` file where one exists (one line, the CLI tag; see `RELEASING.md`, "Cascade files"), and any legacy `OPM_CLI_VERSION` or `go install .../cli/cmd/opm@` literal left in a workflow. Defaults to `cli`'s newest published release whose tarball and `checksums.txt` download anonymously (drafts and asset-less releases are skipped); an explicit `VERSION` is verified the same way. | After a `cli` release |
 | `task registry:*` | Local OCI registry lifecycle (`start`, `stop`, `status`, `list`, `health`, `cleanup`) from `.tasks/registry/docker.yml` | Only under Registry Policy rule 2, 4, or a deliberate rule 3 override |
 | `task enhancements:<name>` | Any task from `enhancements/Taskfile.yml` (`list`, `show`, `new`, `vet`, `check`, `index`, `graph`, `delivery:*`) without `cd` | Browsing / creating / validating enhancement proposals |
 
@@ -262,12 +262,26 @@ any repo. The full type-to-release rule lives in `.claude/skills/commit/SKILL.md
 Publishing modules and catalogs is done by `opm module publish` / `opm catalog publish` (the `cli`
 repo) and by CI, not by root tasks.
 
+## Release Cascade
+
+`RELEASING.md` is the canonical design for how releases flow downstream: release order (core;
+catalog_opm and library; opm-operator; cli), pin classes, gates G1 to G4, the cascade files and the
+owner settings. Read it before touching a pin, a release workflow or a `deps/cascade` PR.
+
+- A downstream bump is typed by what changes for the downstream's users: `fix(deps)` by default for
+  a shipped pin, `test(fixtures)` for test-only pins, `ci(deps)` for the opm CLI release-tool pin.
+- A human may retitle a cascade PR to `feat(deps)` or add `!` (never `!` in catalog_opm; see
+  `RELEASING.md`, "Bump rule"); the bot never lowers a type or drops a `!`. A new major is a
+  hand-made crossing, never a cascade bump.
+- Only a `deps-cascade` PR may squash a shipped bump together with the test, fixture or release-tool
+  edits in that PR, as one `fix(deps)` commit.
+
 ## Workspace Repo
 
 This root is itself a git repo, `open-platform-model/workspace` (public), tracking only the shared
-layer: this file, `STYLE.md`, `.claude/`, `Taskfile.yml`, `.tasks/`. Every child repo is
-gitignored and has its own remote; commit to a child from inside it, and to the root only for
-routing, shared tooling or meta config. Nothing personal is tracked here: no local paths, no
+layer: this file, `STYLE.md`, `RELEASING.md`, `.claude/`, `Taskfile.yml`, `.tasks/`. Every child
+repo is gitignored and has its own remote; commit to a child from inside it, and to the root only
+for routing, shared tooling or meta config. Nothing personal is tracked here: no local paths, no
 private repo names, no personal permissions (those go in the gitignored files listed under Repos).
 When a new repo is cloned in, add it to `.gitignore` and as a `!/<name>/` negation in `.ignore`
 (ripgrep-only, keeps root Grep/Glob searching the children). `task workspace:clone` clones any
@@ -289,11 +303,12 @@ missing org repo.
 | `opm-suite-installer/` | **Proof of concept, bash only.** One OCI container image carrying the `opm` CLI, a bash entrypoint and locally bundled OPM modules, run as a `Batch/Job` to install a suite of applications into the cluster it runs in. Input via job args and env. Milestone 1 is podinfo. Assumes an existing cluster with the operator and CRDs; publishes no CUE module, only an image. Own repo at `github.com/open-platform-model/opm-suite-installer`. | `AGENTS.md`, `openspec/config.yaml` (acts as constitution), `README.md`, `FINDINGS.md` | `task lint`, `task build`, `task check` |
 | `.github/` | Org meta repo: `mention-guard` required PR workflow (source of the org ruleset check). | `README.md` | none |
 
-Other root entries: `STYLE.md` (workspace prose/Markdown style guide that repo `docs/STYLE.md`
-files extend), `.claude/` (shared agents, commands, skills), `.tasks/` (root Taskfile includes),
-`README.md` (onboarding). Gitignored and personal: `CLAUDE.local.md` (routing for personal
-checkouts kept beside the org repos; Claude Code loads it natively beside `AGENTS.md`),
-`.claude/settings.local.json`, `*.code-workspace`, `tasks.md`, `claude-stuff/` (scratch, ignore).
+Other root entries: `STYLE.md` (workspace prose/Markdown style guide that repo `docs/STYLE.md` files
+extend), `RELEASING.md` (release cascade design and policy), `.claude/` (shared agents, commands,
+skills), `.tasks/` (root Taskfile includes), `README.md` (onboarding). Gitignored and personal:
+`CLAUDE.local.md` (routing for personal checkouts kept beside the org repos; Claude Code loads it
+natively beside `AGENTS.md`), `.claude/settings.local.json`, `*.code-workspace`, `tasks.md`,
+`claude-stuff/` (scratch, ignore).
 
 ### Not checked out
 
@@ -316,6 +331,12 @@ Releases are release-please-owned; never tag or publish by hand, and never move 
 tag (see "Release Tags Are Immutable").
 
 ### Pushing
+
+**In `core`, `catalog_opm`, `library`, `opm-operator`, `cli` and `.github`, nothing is pushed to
+`main` directly.** Every change lands by PR, and the OpenSpec archive commit rides the implementing
+PR instead of following it on `main` (owner decision 2026-10-01; the rulesets that enforce it are
+listed in `RELEASING.md`, "Owner settings"). The rules below cover the repos where pushing to
+`main` is still allowed, and every feature branch.
 
 Push with `git push --force-with-lease origin <branch>`; it is the allowed push command. The
 lease refuses when the remote moved since your last fetch, so it never overwrites someone else's

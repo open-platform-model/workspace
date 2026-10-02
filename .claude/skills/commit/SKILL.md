@@ -25,21 +25,34 @@ Common types: `feat`, `fix`, `refactor`, `docs`, `chore`, `test`, `style`, `ci`,
 release-please cuts a release whenever the changelog it generates is non-empty, so the commit
 type decides whether a release happens:
 
-- **Release:** `feat`, `fix`, `perf`, `revert`, `deps`, plus `docs` and `refactor` in the repos
-  that list them visible (`cli`, `library`, `opm-operator`).
+- **Release:** `feat`, `fix`, `perf`, `revert` everywhere; `deps` and `refactor` in `cli`,
+  `library`, `opm-operator`; `docs` there only until each repo's `prepare-release-cascade` change
+  hides it (owner decision 2026-10-01). See the workspace `RELEASING.md`, "Pin classes".
 - **Never release:** `chore`, `test`, `ci`, `build`, `style` (hidden in every repo).
 
 The type follows **what ships**, not what kind of edit it was:
 
 - A dependency or pin bump that changes a shipped artifact (`go.mod`, the `cue.mod` of a published
   module or catalog, `cli/templates/*`) is `fix(deps): ...` (Dependabot's `deps: ...` is
-  equivalent).
+  equivalent in `cli`, `library`, `opm-operator`; core and catalog_opm drop it).
 - A bump that touches only test fixtures, samples, examples or the dev harness
   (`test/fixtures/*`, `tests/fixtures/*`, `config/samples/*`, `hack/*`, `examples/*`, `testdata/*`)
   is `test(fixtures): ...`.
 - Never use `chore` for a bump, and never mix a shipped bump and a fixture bump in one commit.
+  One exception: in a `deps-cascade` PR (the rolling `deps/cascade` bot PR), the shipped bump
+  and the test, fixture or release-tool edits in that PR squash together as one `fix(deps)`
+  commit. The rule holds everywhere else. See the workspace `RELEASING.md`, "Bump rule".
+- An opm CLI pin bump (`.opm-cli-version`, or a CI workflow literal) is `ci(deps): ...`: a
+  release tool, never shipped.
 
-Escape hatch: a `Release-As: x.y.z` footer forces a release from an otherwise hidden commit.
+Escape hatch: a forced version. In the five releasing repos (`core`, `library`, `catalog_opm`,
+`cli`, `opm-operator`) the squash message is `BLANK` once the owner applies workspace
+`RELEASING.md` "Owner settings"; until then the repos still squash with `COMMIT_MESSAGES`, so
+merge with an explicit empty body (`gh pr merge --squash --body ''`). Under `BLANK` only the PR
+title reaches `main` and no body footer (`Release-As:`, `BREAKING CHANGE:`) does. There a breaking change is `!` in the PR
+title, and a forced version is `release-as` in `release-please-config.json`, set by a normal PR
+and removed by the next PR once that release is cut. Elsewhere a `Release-As: x.y.z` footer in the
+final commit on `main` still forces a release from an otherwise hidden commit.
 
 - Scope is optional but encouraged when it clarifies the change.
 - Description must be lowercase, imperative mood, no period at the end.
@@ -50,14 +63,17 @@ Escape hatch: a `Release-As: x.y.z` footer forces a release from an otherwise hi
 
 - Flipping `prerelease-type` in `release-please-config.json` is required but does nothing alone:
   the next release still counts on the old line.
-- The version crosses only through a one-shot `Release-As: X.Y.Z` footer (e.g.
-  `Release-As: 1.0.0-beta.1`) in the **final** commit message on `main`. For a squash merge that
-  is the squash message, not an inner commit.
-- Never put `release-as` in `release-please-config.json`: it pins every later release too.
-- In a multi-package repo the footer applies to every package whose paths the commit touches.
-  Keep the carrier commit inside the one package that should move.
+- In the five releasing repos (squash message `BLANK`) the version crosses only through
+  `release-as` (e.g. `"release-as": "1.0.0-beta.1"`) on the package in
+  `release-please-config.json`, landed by a normal PR. Remove it in the next PR once that release
+  is cut: while it stays, it pins every later release too.
+- Elsewhere a one-shot `Release-As: X.Y.Z` footer in the **final** commit message on `main` does
+  it. In a multi-package repo the footer applies to every package whose paths the commit touches,
+  so keep the carrier commit inside the one package that should move.
 - No body line may start with an identifier followed by `(` (e.g. `word(`): release-please drops
-  the whole commit, footer included.
+  the whole commit, footer included. This bites any commit body that reaches `main`: today every
+  PR commit body in a repo still squashing with `COMMIT_MESSAGES`, and later any local commit
+  pushed straight to `main` in a repo without the PR-only ruleset.
 - GA: set `prerelease: false`. The next releasable commit that touches the package drops the
   suffix (`X.Y.Z-beta.N` to `X.Y.Z`) with no `Release-As`. A hidden-only flip (`chore`) opens no
   release PR, so each package needs a visible carrier commit, in dependency order.
@@ -76,10 +92,11 @@ or re-created, by anyone. The full rule is "Release Tags Are Immutable" in the w
 - A commit that landed in the wrong release is not fixed by re-tagging. Land the fix as a
   releasable commit (`fix(...)`) so release-please cuts the next version. A Go module adds a
   `retract` for the bad version; a CUE/OCI artifact publishes the next version.
-- Release branches are policy only until Phase 2: no repo supports them yet, so fix forward on
-  `main`. Once they exist, a backport or a docs fix for a released minor is a PR into its
+- Release branches are policy only until their automation lands: no repo supports them yet, so fix
+  forward on `main`. Once they exist, a backport or a docs fix for a released minor is a PR into its
   `release/<tag-prefix>vX.Y` branch, cut by the automated action, never by hand. A docs-only fix in
-  `core` or `catalog_opm` cuts no release; `opmodel.dev` pins its commit SHA.
+  `core` or `catalog_opm` cuts no release; `opmodel.dev` builds their docs from the release branch
+  head.
 
 ## Message Content
 

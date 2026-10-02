@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Offline table test for latest-tag.sh and platform-pins.sh. Run from anywhere:
+# Offline table test for latest-tag.sh, platform-pins.sh and opm-cli.sh. Run from anywhere:
 #   .tasks/deps/test-latest-tag.sh
 # git and curl are PATH shims: git prints a fake tag list, curl answers a fake
 # HTTP status per URL suffix and logs its arguments. No network, no registry.
@@ -9,6 +9,7 @@ set -uo pipefail
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 lt="$here/latest-tag.sh"
 pp="$here/platform-pins.sh"
+oc="$here/opm-cli.sh"
 root="$(mktemp -d)"
 trap 'rm -rf "$root"' EXIT
 mkdir -p "$root/bin"
@@ -139,6 +140,45 @@ mkdir -p "$root/pp3"
 (cd "$root/pp3" && "$pp" >/dev/null 2>"$root/err"); rc=$?
 [ "$rc" != 0 ] && grep -qF 'not found (is cli checked out?)' "$root/err"
 check "mirror cue.mod absent: refuse" $?
+
+# opm-cli.sh writes <repo>/.opm-cli-version where present and still rewrites
+# the legacy workflow literals, offline (explicit version, curl shim answers 200).
+mkoc() { # $1 dir: catalog_opm on the file form, opm-operator on both forms, modules legacy only
+  mkdir -p "$1/catalog_opm/.github/workflows" "$1/opm-operator/.github/workflows" "$1/modules/.github/workflows"
+  printf 'v1.0.0-beta.2\n' >"$1/catalog_opm/.opm-cli-version"
+  # shellcheck disable=SC2016 # the workflow line is literal text
+  printf '      - run: echo "OPM_CLI_VERSION=$(cat .opm-cli-version)" >>"$GITHUB_ENV"\n' \
+    >"$1/catalog_opm/.github/workflows/ci.yml"
+  printf 'v1.0.0-beta.2\n' >"$1/opm-operator/.opm-cli-version"
+  printf '      - run: go install github.com/open-platform-model/cli/cmd/opm@v1.0.0-beta.2\n' \
+    >"$1/opm-operator/.github/workflows/test.yml"
+  printf "env:\n  OPM_CLI_VERSION: 'v1.0.0-beta.2'\n" >"$1/modules/.github/workflows/ci.yml"
+}
+tags "${base[@]}"; codes
+mkoc "$root/oc1"
+cp "$root/oc1/catalog_opm/.github/workflows/ci.yml" "$root/before.yml"
+(cd "$root/oc1" && FAKE_GIT_FAIL=1 "$oc" v1.0.0-beta.4 2>&1 | sed 's/\x1b\[[0-9;]*m//g' >"$root/out"; exit "${PIPESTATUS[0]}")
+check "opm-cli succeeds offline with an explicit version" $?
+for r in catalog_opm opm-operator; do
+  cmp -s <(printf 'v1.0.0-beta.4\n') "$root/oc1/$r/.opm-cli-version"
+  check "opm-cli writes $r/.opm-cli-version as one line" $?
+done
+grep -qF 'catalog_opm/.opm-cli-version: v1.0.0-beta.2 -> v1.0.0-beta.4' "$root/out"
+check "opm-cli reports the .opm-cli-version move" $?
+cmp -s "$root/before.yml" "$root/oc1/catalog_opm/.github/workflows/ci.yml"
+check "opm-cli leaves a workflow that reads the file untouched" $?
+grep -qF 'cli/cmd/opm@v1.0.0-beta.4' "$root/oc1/opm-operator/.github/workflows/test.yml"
+check "opm-cli still rewrites the legacy go install literal" $?
+grep -qF "OPM_CLI_VERSION: 'v1.0.0-beta.4'" "$root/oc1/modules/.github/workflows/ci.yml"
+check "opm-cli still rewrites the legacy OPM_CLI_VERSION literal" $?
+check "opm-cli never creates .opm-cli-version" "$([ -e "$root/oc1/modules/.opm-cli-version" ] && echo 1 || echo 0)"
+(cd "$root/oc1" && FAKE_GIT_FAIL=1 "$oc" v1.0.0-beta.4 2>&1 | sed 's/\x1b\[[0-9;]*m//g' >"$root/out")
+grep -qF 'catalog_opm/.opm-cli-version: v1.0.0-beta.4 (unchanged)' "$root/out"
+check "opm-cli reports an unchanged .opm-cli-version" $?
+codes "v1.0.0-alpha.21/opm-linux-amd64.tar.gz 404"
+(cd "$root/oc1" && FAKE_GIT_FAIL=1 "$oc" v1.0.0-alpha.21 >/dev/null 2>&1); rc=$?
+[ "$rc" != 0 ] && [ "$(cat "$root/oc1/catalog_opm/.opm-cli-version")" = v1.0.0-beta.4 ]
+check "opm-cli: unconsumable version refused, file untouched" $?
 
 printf '%d passed, %d failed\n' "$pass" "$fail"
 [ "$fail" = 0 ]
