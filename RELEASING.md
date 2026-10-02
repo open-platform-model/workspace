@@ -197,7 +197,8 @@ shared resolver from the `.github` repo (the `add-cascade-resolver` change), wit
   alone is not enough.
 - **Pins never move backwards.** If the newest tag is not published yet, the pin stays.
 - **Consistent set.** Where a repo pins a catalog and core together, core moves to the version that
-  catalog pins.
+  catalog pins. library differs: core in its test modules equals `DefaultSchemaModule`, which moves
+  first under `need-human-review` (see library `derive-fixture-versions`).
 - **Frozen pins** in `.cascade-frozen` are never touched. **Held pins** in `.cascade-hold` stop at
   their `max`.
 - **Version advances happen once per PR.** A fixture or template version is set to `main`'s
