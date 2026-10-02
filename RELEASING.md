@@ -80,7 +80,7 @@ Where the pins live today:
 | `catalog_opm` | release-tool | `.opm-cli-version` (today `OPM_CLI_VERSION` in three workflows) | opm CLI |
 | `library` | shipped | `DefaultSchemaModule` in `opm/schema/loader.go`; `DefaultCoreVersion` in `opm/internal/registrytest/registrytest.go` derives from it once `derive-fixture-versions` lands (a hand-kept mirror until then) | core |
 | `library` | test | the `cue.mod` files under `modules/`, `testdata/modules/`, `testdata/parity/`, `testdata/cue.mod`, `testdata/render/**`, and the version literals in kernel tests | core, opm catalog |
-| `library` | frozen | every deliberate old literal in test code, listed with a reason in library's `.cascade-frozen` (created by `derive-fixture-versions`), among them the old-core literals in `opm/kernel/render_collision_test.go`, `opm/kernel/render_core_floor_test.go`, `opm/errors/coretooold_test.go` and the opm catalog `4.0.1` literals in `opm/helper/platformmodule/closure_test.go` | none |
+| `library` | frozen | see library's `.cascade-frozen` (created by `derive-fixture-versions`) | none |
 | `opm-operator` | shipped | `go.mod` (`github.com/open-platform-model/library`) | library |
 | `opm-operator` | test | `config/samples/`, `test/fixtures/` (including `CatalogVersion()` in `test/fixtures/catalog.go`) | core, catalogs |
 | `opm-operator` | release-tool | `.opm-cli-version` (today `go install .../cli/cmd/opm@` in four workflows) | opm CLI |
