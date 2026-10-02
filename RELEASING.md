@@ -76,7 +76,7 @@ Where the pins live today:
 
 | Repo | Class | Where | Upstream |
 | --- | --- | --- | --- |
-| `catalog_opm` | shipped | `opm/cue.mod/module.cue` | core |
+| `catalog_opm` | shipped | `src/cue.mod/module.cue` | core |
 | `catalog_opm` | release-tool | `.opm-cli-version` (today `OPM_CLI_VERSION` in three workflows) | opm CLI |
 | `library` | shipped | `DefaultSchemaModule` in `opm/schema/loader.go`; `DefaultCoreVersion` in `opm/internal/registrytest/registrytest.go` derives from it once `derive-fixture-versions` lands (a hand-kept mirror until then) | core |
 | `library` | test | the `cue.mod` files under `modules/`, `testdata/modules/`, `testdata/parity/`, `testdata/cue.mod`, `testdata/render/**`, and the version literals in kernel tests | core, opm catalog |
@@ -297,7 +297,7 @@ labels other bots set, with their live values:
 
 | Repo | Shipped | Test and release-tool |
 | --- | --- | --- |
-| `catalog_opm` | core in `opm/` | `.opm-cli-version` |
+| `catalog_opm` | core in `src/` | `.opm-cli-version` |
 | `library` | `DefaultSchemaModule` only, labelled `need-human-review`; `DefaultCoreVersion` and the other test literals derive from it after `derive-fixture-versions` | test `cue.mod` files and the parity catalog |
 | `opm-operator` | `go get` library and `go mod tidy` | samples, `test/fixtures/catalog.go`, fixtures, `.opm-cli-version` |
 | `cli` | `go get` library; `task operator:sync` to the newest published operator; templates and their versions | `hack/platform`, `hack/kind-platform.yaml`, `examples`, the podinfo fixture, and the six testdata `cue.mod` files that `bump-stale-testdata-pins` brings current (`tests/fixtures/valid/simple-module`, `tests/fixtures/valid/module-with-debug-values`, `internal/instinit/testdata/initvalues`, `internal/workflow/render/testdata/skip-unprovided`, `tests/e2e/testdata/duplicate-identities`, `tests/integration/module-apply/testdata`) |
