@@ -306,7 +306,7 @@ No cascade PR auto-merges. Release PRs are always merged by a human.
 
 | Gate | Where | Rule | Status |
 | --- | --- | --- | --- |
-| G1 release-pin gate | Release PRs in catalog_opm, library, opm-operator, cli | Fails on a Go `replace`, a pseudo-version or untagged OPM Go pin, a `-0.dev.` pin in a shipped `cue.mod` (library: in any tracked `cue.mod`), a tracked `cue.mod/local-module.cue`, or (cli) `PinnedOperatorVersion` not matching the image tag in `install.yaml` | Required: a step in the required job, binding once the ruleset requires that job |
+| G1 release-pin gate | Release PRs in catalog_opm, library, opm-operator, cli | Fails on a Go `replace`, a pseudo-version or untagged OPM Go pin, a `-0.dev.` pin in a shipped `cue.mod` (library: any tracked `cue.mod`; opm-operator: its published fixture `cue.mod`s), a tracked `cue.mod/local-module.cue`, or (cli) `PinnedOperatorVersion` not matching the image tag in `install.yaml` | Required: a step in the required job, binding once the ruleset requires that job |
 | G2 `cascade/freshness` | Commit status on the release PR head | Fails when a shipped pin is behind the newest published upstream, unless `.cascade-hold` holds it | Warning; required once `.cascade-hold` exists and two weeks live show no false alarms |
 | G3 `cascade/settled` | Commit status on the release PR head | Warns while an upstream has an open `fix(deps)` cascade PR, or a pending release PR that contains a merged `fix(deps)` cascade | Warning; required after two weeks without false alarms |
 | G4 `e2e-verified` label | cli release PRs (check `G4 operator-embed evidence`) | When `PinnedOperatorVersion` changed since the last cli tag, the PR needs the label | Interim; retires only when all three retirement conditions below hold |
