@@ -261,8 +261,8 @@ key.
   bundle.
 - **`publish`** runs in the `cascade` Environment, which only `main` can use. It mints the App token
   right before use, pushes the bundle, creates or updates the PR, and sets the G2 and G3 commit
-  statuses on any open release PR. If a human pushed in between, it retries the whole run up to
-  three times.
+  statuses on any open release PR. If a human pushed in between, `publish` fails and the pending
+  run, the next dispatch or the daily sweep retries; `publish` never reruns repository code.
 
 ### Labels
 
