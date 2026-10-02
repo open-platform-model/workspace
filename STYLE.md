@@ -77,8 +77,12 @@ Do not use HTML `<details>` or Hugo shortcodes in repo-local docs. They belong o
 
 ## Site Pages
 
-Site pages are the `opmodel.dev/` site content and every page under a repository's `docs/site/`. They follow these rules in place of the repo-local forms above.
+Site pages are the `opmodel.dev/` site content and every page under a repository's `docs/site/`. They follow these rules in place of the repo-local forms above, and they are written in the voice set out in [`VOICE.md`](VOICE.md).
 
+- **Every page has one type.** A leaf page is exactly one of four types: tutorial, how-to, explanation or reference, and never mixes them. A section index lists its pages with their descriptions, grouped by type in that order. A page's section and address follow from where it sits; no page declares either.
+- **Each type has a fixed shape.** Every page of a type carries that type's parts, in that order. A comparison with Helm or any other deployment tool appears only on Start here pages; every other page explains OPM on its own terms.
+- **A page lives where a change would make it wrong.** Its source sits in the repository whose change would make the page wrong, and the site engine owns no content. Every Concepts page lives in `core`. Prose with no single owner lives in `opm`.
+- **Reference facts are generated.** Every fact derivable from CUE or from cobra is generated, never transcribed by hand; guidance is authored. Catalog reference leads with the abstraction family, blueprints first; the raw `k8s-*` family is one generated table, marked as the escape hatch.
 - **Callouts are GitHub alerts.** The marker stands alone on its line and is one of `NOTE`, `TIP`, `IMPORTANT`, `WARNING` or `CAUTION`. A title is a bold first line, followed by an empty quote line:
 
   ```markdown
@@ -90,14 +94,14 @@ Site pages are the `opmodel.dev/` site content and every page under a repository
 
   Never write `> [!NOTE] Title`, a foldable `> [!NOTE]-`, or a Starlight `:::note[...]` block.
 
-  A direction note, which names future work and the enhancement that designs it (0018:D3), is a `NOTE` alert whose bold title line is `**Direction**`; the site gives it its own label and style.
+  A direction note, which names future work and the enhancement that designs it, is a `NOTE` alert whose bold title line is `**Direction**`; the site gives it its own label and style. Pages state what OPM does today. Future work appears only in a direction note, and a draft enhancement is never called forthcoming.
 - **Figures are `{{< opm/<name> >}}` shortcodes.** Write each on its own line, with a blank line before and after, no parameters and no closing tag. The seven names are `module-to-cluster`, `roles-and-artifacts`, `component-to-objects`, `where-things-live`, `three-ways-to-deploy`, `helm-and-opm` and `one-trait-any-provider`. No other shortcode appears in a `docs/site/` page. Hugo expands shortcodes even inside code fences, so to show one in a code block, write `{{</* opm/<name> */>}}`.
 - **Order is `weight`.** A page's place in its section comes from the optional front-matter key `weight: N`, a positive integer: lower first, then title. Never write a `sidebar:` block.
 - **A section page is `_index.md`**, never `index.md`: Hugo reads `index.md` as a leaf bundle that swallows its siblings. A section page declares no `type`.
 - **No MDX.** Pages are `.md` files: no `.mdx`, no `import ... from` lines and no component tags such as `<ModuleToCluster />`.
 - **Front matter allows four keys.** `title` and `description` (one line) are required on every page. `type` (`tutorial`, `how-to`, `explanation` or `reference`) is required on a leaf page. `weight` is optional. Every other key is forbidden, including `sidebar`, `slug`, `draft` and `aliases`.
 - **Links are root-absolute with a trailing slash**, and this replaces the relative-link rule above: `[What OPM is](/docs/start/what-is-opm/)`, with an optional `#fragment`. An enhancement is linked the same way, at `/enhancements/<NNNN>/` or one of its documents, `/enhancements/<NNNN>/<document>/` (`problem`, `design`, `decisions`, `graduation`, `risks`, `operational` or `questions`), and nothing else under `/enhancements`. Never write relative links, `.md` links, version-prefixed links (`/v1.0/docs/...`) or raw `href=`/`src=` attributes. The site build fails on a link to a missing page.
-- **No images.** Figures are drawn in the site engine (0018:D14); write no `![...]` and no `<img>`.
+- **No images.** Figures are drawn in the site engine, in one visual language; write no `![...]` and no `<img>`.
 - **Every code fence carries a language tag**; use `text` for plain text.
 
 github.com renders the alerts but shows each `{{< opm/... >}}` shortcode as literal text. This trade-off is accepted: the figures render on the site.

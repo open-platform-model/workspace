@@ -279,13 +279,13 @@ owner settings. Read it before touching a pin, a release workflow or a `deps/cas
 ## Workspace Repo
 
 This root is itself a git repo, `open-platform-model/workspace` (public), tracking only the shared
-layer: this file, `STYLE.md`, `RELEASING.md`, `.claude/`, `Taskfile.yml`, `.tasks/`. Every child
-repo is gitignored and has its own remote; commit to a child from inside it, and to the root only
-for routing, shared tooling or meta config. Nothing personal is tracked here: no local paths, no
-private repo names, no personal permissions (those go in the gitignored files listed under Repos).
-When a new repo is cloned in, add it to `.gitignore` and as a `!/<name>/` negation in `.ignore`
-(ripgrep-only, keeps root Grep/Glob searching the children). `task workspace:clone` clones any
-missing org repo.
+layer: this file, `STYLE.md`, `VOICE.md`, `RELEASING.md`, `.claude/`, `Taskfile.yml`, `.tasks/`.
+Every child repo is gitignored and has its own remote; commit to a child from inside it, and to the
+root only for routing, shared tooling or meta config. Nothing personal is tracked here: no local
+paths, no private repo names, no personal permissions (those go in the gitignored files listed under
+Repos). When a new repo is cloned in, add it to `.gitignore` and as a `!/<name>/` negation in
+`.ignore` (ripgrep-only, keeps root Grep/Glob searching the children). `task workspace:clone` clones
+any missing org repo.
 
 ## Repos
 
@@ -304,11 +304,11 @@ missing org repo.
 | `.github/` | Org meta repo: `mention-guard` required PR workflow (source of the org ruleset check). | `README.md` | none |
 
 Other root entries: `STYLE.md` (workspace prose/Markdown style guide that repo `docs/STYLE.md` files
-extend), `RELEASING.md` (release cascade design and policy), `.claude/` (shared agents, commands,
-skills), `.tasks/` (root Taskfile includes), `README.md` (onboarding). Gitignored and personal:
-`CLAUDE.local.md` (routing for personal checkouts kept beside the org repos; Claude Code loads it
-natively beside `AGENTS.md`), `.claude/settings.local.json`, `*.code-workspace`, `tasks.md`,
-`claude-stuff/` (scratch, ignore).
+extend), `VOICE.md` (the voice of site pages), `RELEASING.md` (release cascade design and policy),
+`.claude/` (shared agents, commands, skills), `.tasks/` (root Taskfile includes), `README.md`
+(onboarding). Gitignored and personal: `CLAUDE.local.md` (routing for personal checkouts kept beside
+the org repos; Claude Code loads it natively beside `AGENTS.md`), `.claude/settings.local.json`,
+`*.code-workspace`, `tasks.md`, `claude-stuff/` (scratch, ignore).
 
 ### Not checked out
 
