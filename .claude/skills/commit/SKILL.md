@@ -26,8 +26,8 @@ release-please cuts a release whenever the changelog it generates is non-empty, 
 type decides whether a release happens:
 
 - **Release:** `feat`, `fix`, `perf`, `revert` everywhere; `deps` and `refactor` in `cli`,
-  `library`, `opm-operator`; `docs` there only until each repo's `prepare-release-cascade` change
-  hides it (owner decision 2026-10-01). See the workspace `RELEASING.md`, "Pin classes".
+  `library`, `opm-operator`; `docs` only in `opm` (hidden in every other repo). See the
+  workspace `RELEASING.md`, "Pin classes".
 - **Never release:** `chore`, `test`, `ci`, `build`, `style` (hidden in every repo).
 
 The type follows **what ships**, not what kind of edit it was:
@@ -93,10 +93,13 @@ or re-created, by anyone. The full rule is "Release Tags Are Immutable" in the w
   releasable commit (`fix(...)`) so release-please cuts the next version. A Go module adds a
   `retract` for the bad version; a CUE/OCI artifact publishes the next version.
 - Release branches are policy only until their automation lands: no repo supports them yet, so fix
-  forward on `main`. Once they exist, a backport or a docs fix for a released minor is a PR into its
-  `release/<tag-prefix>vX.Y` branch, cut by the automated action, never by hand. A docs-only fix in
-  `core` or `catalog_opm` cuts no release; `opmodel.dev` builds their docs from the release branch
-  head.
+  forward on `main`. Once they exist, a backport for a released minor, or a `catalog_opm` docs
+  fix, is a PR into its `release/<tag-prefix>vX.Y` branch, cut by the automated action, never by
+  hand.
+- A docs-only fix in `core`, `catalog_opm`, `library`, `opm-operator` or `cli` cuts no release.
+  `opmodel.dev` builds `catalog_opm` docs from the release branch head (from `main` during beta);
+  for the other four the fix reaches the site with the next release or a hand-dispatched docs
+  revision (`docs.yml`, `mode=revision`). Full rule: workspace `AGENTS.md`, "Release branches".
 
 ## Message Content
 

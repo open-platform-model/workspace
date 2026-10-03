@@ -133,8 +133,10 @@ excluded for now. The personal `emil-jacero/opm-modules` repo is out of scope an
   dispatch recovery path).
 
 **Release branches (policy; automation lands before GA).** A released minor that needs a
-backport or a docs fix gets a maintenance branch `release/<tag-prefix>vX.Y` (core `release/v2.0`;
-library, cli, opm-operator and opm `release/v1.0`; catalog_opm `release/opm-v4.4`).
+backport gets a maintenance branch `release/<tag-prefix>vX.Y` (core `release/v2.0`; library, cli,
+opm-operator and opm `release/v1.0`; catalog_opm `release/opm-v4.4`). So does a catalog_opm docs
+fix, since the site still reads catalog_opm docs from git; core, library, opm-operator and cli fix
+released docs with a docs revision instead (below).
 
 - **Version-line rule:** `release/vX.Y` is cut only when `main`'s next release is `X.(Y+1).0` or
   higher; after the cut, `main` never releases an `X.Y.*` version.
@@ -146,9 +148,16 @@ library, cli, opm-operator and opm `release/v1.0`; catalog_opm `release/opm-v4.4
 - Every change to a release branch, backport or docs fix, lands through a PR.
 - Release branches are never deleted or force-pushed; end of life is documented, not enforced by
   deleting the branch.
-- A docs-only fix in `core` or `catalog_opm` cuts no release: `opmodel.dev` builds their docs from
-  the release branch head (from `main` while that line has no release branch) and records the SHA
-  in every build (`site/versions.conf`, line mode).
+- A docs-only fix in `core`, `catalog_opm`, `library`, `opm-operator` or `cli` cuts no release:
+  each repo hides `docs` in its `release-please-config.json` (`opm` does not, so a docs fix there
+  releases). A push to `main` publishes only the `edge` docs bundle. How the fix reaches the
+  `opmodel.dev` v1.0 docs:
+  - `core`, `library`, `opm-operator`, `cli`: the site reads their docs bundles at released
+    versions (`site/bundles.cue`), so the fix arrives with the next release or a docs revision
+    of the released version, dispatched by hand:
+    `gh workflow run docs.yml --ref main -f mode=revision -f tag=vX.Y.Z -f fix=<sha>`.
+  - `catalog_opm`: the site builds its docs from the release branch head (from `main` while that
+    line has no release branch) and records the SHA in every build (`site/versions.conf`).
 - **Release-branch automation (before GA), not built yet:** the cut action, release workflows that
   run on `release/**`, and PR checks on `release/**`, proven in `release-flow-sandbox` (including a
   cut from a tag older than the change and the main-versus-branch version collision). No repo

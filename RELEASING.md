@@ -109,16 +109,14 @@ The type follows what ships. The full type rule lives in the workspace commit sk
 - `test`, `ci`, `build`, `chore` and `style` never release.
 - `refactor` releases in library, opm-operator and cli, so early library rewrites reach their
   consumers.
-- `docs` stops releasing in library, opm-operator and cli once each repo's
-  `prepare-release-cascade` change hides it. Until then a docs-only merge there still cuts a
-  release and starts a cascade.
-- Hiding `docs` delays docs on opmodel.dev unless the site builds those repos' docs from the
-  release-branch head, as it already does for core and catalog_opm. Today it builds library and
-  opm-operator docs at what the newest cli tag pins, and cli docs at that tag. The opmodel.dev
-  change `build-docs-from-branch-head` moves library, opm-operator and cli to the branch head (owner
-  decision 2026-10-02), and the docs-hiding section of each `prepare-release-cascade` merges only
-  after it. Until then a docs-only fix in those repos reaches opmodel.dev only with the next
-  release.
+- `docs` never releases in the five cascade repos: each hides it in `release-please-config.json`,
+  so a docs-only merge cuts no release and starts no cascade. (`opm` still releases on `docs`.)
+- A docs-only fix still has to reach opmodel.dev. The site's v1.0 reads core, library,
+  opm-operator and cli from their docs bundles at released versions (opmodel.dev
+  `site/bundles.cue`), so a fix there arrives with the next release or a docs revision of the
+  released version, dispatched by hand (`mode=revision` of each repo's `docs.yml`). A push to
+  `main` publishes only the `edge` bundle. catalog_opm's docs still come from its release-branch
+  head (from `main` during beta), so a fix there reaches the site at the next build.
 
 ## Bump rule
 
