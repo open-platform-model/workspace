@@ -28,9 +28,9 @@ Words used below:
 - **Glue**: the library code that adapts the kernel to one core schema version (the loader around
   `DefaultSchemaModule` and what reads core's definitions). A core bump can break it without any
   pin conflict.
-- **Identity-advance commit**: the `chore: advance <catalog> identity.Version to <version>` commit
-  that catalog_opm's release workflow pushes onto its own release PR, so each catalog's
-  `identity/identity.cue` declares the version it is released as.
+- **Identity-advance commit**: the `chore: advance opm identity.Version to <version>` commit that
+  catalog_opm's release workflow pushes onto its own release PR, so the opm catalog's
+  `src/identity/identity.cue` declares the version it is released as.
 - **Sandbox repos**: two throwaway repos the owner creates in Phase 0 to rehearse a full
   upstream-to-downstream cascade cycle before any real repo joins.
 
@@ -81,17 +81,17 @@ Where the pins live today:
 | Repo | Class | Where | Upstream |
 | --- | --- | --- | --- |
 | `catalog_opm` | shipped | `src/cue.mod/module.cue` | core |
-| `catalog_opm` | release-tool | `.opm-cli-version` (today `OPM_CLI_VERSION` in three workflows) | opm CLI |
+| `catalog_opm` | release-tool | `.opm-cli-version`, read by the workflows | opm CLI |
 | `library` | shipped | `DefaultSchemaModule` in `opm/schema/loader.go`; `DefaultCoreVersion` in `opm/internal/registrytest/registrytest.go` derives from it once `derive-fixture-versions` lands (a hand-kept mirror until then) | core |
 | `library` | test | the `cue.mod` files under `modules/`, `testdata/modules/`, `testdata/parity/`, `testdata/cue.mod`, `testdata/render/**`, and the version literals in kernel tests | core, opm catalog |
 | `library` | frozen | see library's `.cascade-frozen` (created by `derive-fixture-versions`) | none |
 | `opm-operator` | shipped | `go.mod` (`github.com/open-platform-model/library`) | library |
-| `opm-operator` | test | `config/samples/`, `test/fixtures/` (including `CatalogVersion()` in `test/fixtures/catalog.go`) | core, catalogs |
-| `opm-operator` | release-tool | `.opm-cli-version` (today `go install .../cli/cmd/opm@` in four workflows) | opm CLI |
+| `opm-operator` | test | `config/samples/`, `test/fixtures/` (including `CatalogVersion()` in `test/fixtures/catalog.go`) | core, opm catalog |
+| `opm-operator` | release-tool | `.opm-cli-version`, read by the workflows | opm CLI |
 | `cli` | shipped | `go.mod` (library) | library |
 | `cli` | shipped | `PinnedOperatorVersion` in `internal/operator/manifest.go` plus `internal/operator/dist/install.yaml`, always moved together | opm-operator |
 | `cli` | shipped | `templates/{minimal,standard,advanced}/cue.mod/module.cue`, plus each template's own version | core, opm catalog |
-| `cli` | test | `hack/platform/cue.mod`, `hack/kind-platform.yaml`, `examples/cue.mod`, `tests/fixtures/` (including `tests/fixtures/valid/{simple-module,module-with-debug-values}/cue.mod`), `tests/e2e/testdata/operator-owned/`, and the `cue.mod` files under `internal/instinit/testdata/initvalues/`, `internal/workflow/render/testdata/skip-unprovided/`, `tests/e2e/testdata/duplicate-identities/` and `tests/integration/module-apply/testdata/` | core, catalogs |
+| `cli` | test | `hack/platform/cue.mod`, `hack/kind-platform.yaml`, `examples/cue.mod`, `tests/fixtures/` (including `tests/fixtures/valid/{simple-module,module-with-debug-values}/cue.mod`), `tests/e2e/testdata/operator-owned/`, and the `cue.mod` files under `internal/instinit/testdata/initvalues/`, `internal/workflow/render/testdata/skip-unprovided/`, `tests/e2e/testdata/duplicate-identities/` and `tests/integration/module-apply/testdata/` | core, opm catalog |
 | `cli` | frozen | in `tests/e2e/instance_build_test.go`, the older-core platform, `collisionCorePin` and `olderCatalogPin` (`opmodel.dev/catalogs/opm@v4`); the old core pins in `internal/cmd/platform/check_test.go`; the `TestRender_Golden` core literal in `internal/instinit/render_test.go`; all listed in cli's `.cascade-frozen` (created by `bump-stale-testdata-pins`) | none |
 
 core pins nothing OPM-owned and has no receiver.
@@ -164,7 +164,8 @@ public, never on the release event itself.
 
 - core does not dispatch to opm-operator or the cli. Their core pins follow the opm catalog, so a
   core-only dispatch would change nothing there.
-- catalog_opm sends one dispatch per run, listing every tag it published.
+- catalog_opm sends one dispatch per run, naming the `opm-vX.Y.Z` tag it published (the opm
+  catalog under `src/` is its only module).
 - The notify job runs in the `cascade` Environment, which holds the App key. The Environment is
   declared inside the reusable notify workflow, because a caller job that uses `uses:` cannot set
   `environment`. That is why core needs the Environment even though it has no receiver.
@@ -351,7 +352,7 @@ it.
 One line: the opm CLI tag that CI and the release job install.
 
 ```text
-v1.0.0-beta.4
+v1.0.0-beta.7
 ```
 
 How CI reads it is up to each repo. One example is
@@ -511,7 +512,7 @@ workflow pushes only to `release-please--*` branches and `.github` only to `tag-
 | Phase | Content | Gate to leave it |
 | --- | --- | --- |
 | 0 Settings | The owner applies "Owner settings" and creates two sandbox repos. Open checks: a one-commit PR squashes under `PR_TITLE` and releases; cross-repo dispatch and App-pushed PR CI work; a bot merge of `main` that changes a workflow file, and the App's "Update branch", are accepted without the Workflows permission; the org Actions policy lets org repos call `.github` reusable workflows; the owner's pull-request-only bypass really merges a PR past a red required check | every checkbox ticked, except a required check whose job a later change adds (it becomes required when that change lands) |
-| 1 Prepare | The changes below, in parallel. Drift is caught up by hand first (the cli operator embed is already current at `v1.0.0-beta.4`): opm CLI pins (`ci(deps)`; catalog_opm and opm-operator catch up inside their `prepare-release-cascade`, so do not run `task deps:pins:opm-cli` against them before those merge), and library's four opm catalog `v4.4.2` `cue.mod` files (`modules/opm_platform`, `testdata/modules/web_app`, `testdata/parity`, `testdata/parity/opm_platform`) as `test(fixtures)` | each change merged |
+| 1 Prepare | The changes below, in parallel. Drift is caught up by hand first (the cli operator embed is already current at `v1.0.0-beta.4`): opm CLI pins (`ci(deps)`; catalog_opm and opm-operator caught up inside their `prepare-release-cascade`), and library's four opm catalog `v4.4.2` `cue.mod` files (`modules/opm_platform`, `testdata/modules/web_app`, `testdata/parity`, `testdata/parity/opm_platform`) as `test(fixtures)` | each change merged |
 | 2 Tasks | The shared resolver in `.github`, then `task deps:cascade` in each repo | a run on `main` exits 3; a run against an older pin produces the expected diff |
 | 3 Wiring | Shared notify and receive workflows in `.github`, then each repo joins with `CASCADE_DRY_RUN=true` | one full two-repo sandbox cycle green; dry runs show the expected diffs |
 | 4 Live | Clear the dry-run flag repo by repo; watch every run | two weeks live |
@@ -522,6 +523,11 @@ until the rulesets exist. Phase 0 gates Phase 3, because the wiring needs the Ap
 Environments and the merge settings.
 
 ### Changes
+
+Status 2026-10-04: Phase 1 merged by 2026-10-02, and the opm CLI catch-up is done. opmodel.dev
+`build-docs-from-branch-head` merged, then was superseded for v1.0 on 2026-10-04 by
+`pull-reference-bundles` (docs bundles at released versions; see "Pin classes"). The rows below
+are the plan as made.
 
 | Phase | Repo | Change | Content | Depends on |
 | --- | --- | --- | --- | --- |
