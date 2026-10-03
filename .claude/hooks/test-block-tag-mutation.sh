@@ -11,6 +11,7 @@ hook="$here/block-tag-mutation.sh"
 # Scratch workspace: one clone per scope case, told apart only by its remote URL.
 #   ws/core         origin https  open-platform-model/core      (in scope, default cwd)
 #   ws/cli          origin ssh    open-platform-model/cli       (in scope)
+#   ws/opm          origin https  open-platform-model/opm       (in scope)
 #   ws/modules      origin        open-platform-model/modules   (excluded)
 #   ws/opm-modules  origin        emil-jacero/opm-modules       (personal, excluded)
 #   ws/fork         origin fork, upstream open-platform-model/library
@@ -32,6 +33,7 @@ mkrepo() {
 }
 mkrepo core origin https://github.com/open-platform-model/core.git
 mkrepo cli origin git@github.com:open-platform-model/cli.git
+mkrepo opm origin https://github.com/open-platform-model/opm.git
 mkrepo modules origin https://github.com/open-platform-model/modules.git
 mkrepo opm-modules origin https://github.com/emil-jacero/opm-modules.git
 mkrepo fork origin https://github.com/emil-jacero/library.git upstream https://github.com/open-platform-model/library
@@ -201,6 +203,14 @@ run_in plain block 'gh api -X DELETE repos/open-platform-model/release-flow-sand
 run_in plain block 'gh api -X PUT orgs/open-platform-model/rulesets/1 --input r.json'
 run_in modules block 'gh auth refresh -s admin:org'
 run block 'gh api -X DELETE "repos/{owner}/{repo}/git/refs/tags/v1.0.0"'
+run_in opm block 'git tag -d v1.0.0-beta.1'
+run_in opm block 'git push origin :refs/tags/v1.0.0-beta.1'
+run_in opm block 'gh release delete v1.0.0-beta.1 --yes'
+run_in plain block 'gh release delete v1.0.0-beta.1 -R open-platform-model/opm --yes'
+run_in plain block 'gh api -X DELETE repos/open-platform-model/opm/git/refs/tags/v1.0.0-beta.1'
+run_in '' block 'git -C opm push --force origin v1.0.0-beta.1'
+run_in opm allow 'git push origin docs/new-page'
+run_in opm allow 'git tag -l "v*"'
 
 # ------------------------------------------------------------- scope: excluded targets pass
 run_in modules allow 'git tag -d sonarr/v1.0.1'

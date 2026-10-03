@@ -102,7 +102,7 @@ Why: the docs system pins a git ref per site version, and every consumer pins a 
 moves silently changes what a pinned version means.
 
 **Scope.** The `open-platform-model` repos that release: `core`, `library`, `catalog_opm`, `cli`,
-`opm-operator` (plus `release-flow-sandbox`, where the release flow is tested). `modules` is
+`opm-operator`, `opm` (plus `release-flow-sandbox`, where the release flow is tested). `modules` is
 excluded for now. The personal `emil-jacero/opm-modules` repo is out of scope and stays as it is.
 
 - **Never:** `git tag -f` / `-d`, `git update-ref refs/tags/...`, a push that deletes or
@@ -134,7 +134,7 @@ excluded for now. The personal `emil-jacero/opm-modules` repo is out of scope an
 
 **Release branches (policy; automation lands before GA).** A released minor that needs a
 backport or a docs fix gets a maintenance branch `release/<tag-prefix>vX.Y` (core `release/v2.0`;
-library, cli and opm-operator `release/v1.0`; catalog_opm `release/opm-v4.4`).
+library, cli, opm-operator and opm `release/v1.0`; catalog_opm `release/opm-v4.4`).
 
 - **Version-line rule:** `release/vX.Y` is cut only when `main`'s next release is `X.(Y+1).0` or
   higher; after the cut, `main` never releases an `X.Y.*` version.
@@ -160,7 +160,7 @@ except where noted, and the org owner administers them in the browser.
 - `tags-immutable` blocks tag update and deletion.
 - `tags-create-app-only` limits tag creation to the release App (its only bypass).
 - `release-branches` covers `release/*`: no deletion, no force push, PRs only.
-- GitHub immutable releases on `core`, `library`, `catalog_opm`, `cli`, `opm-operator` and
+- GitHub immutable releases on `core`, `library`, `catalog_opm`, `cli`, `opm-operator`, `opm` and
   `release-flow-sandbox`. `cli` and `opm-operator` publish draft-first: every asset is attached
   to the draft and the release is published last.
 
@@ -175,6 +175,11 @@ except where noted, and the org owner administers them in the browser.
   `opm-operator` `v1.0.0-beta.3`, were published from their drafts by the release workflow,
   authored by the release App, immutable and carrying every asset. `cli` and `opm-operator`
   release normally from now on.
+- **Pending for `opm`** (checked 2026-10-03): `opm` joins the scope with its release-please
+  workflow (opm#23; first release `v1.0.0-beta.1`, tags `vX.Y.Z` with no component). It is not
+  yet in the `tags-immutable` or `tags-create-app-only` ruleset and its immutable releases are
+  off; of these controls only `release-branches` covers it. The owner adds the rest before its
+  first release.
 
 Do not describe a pending control as live, or a live one as pending; update this list when one
 changes.

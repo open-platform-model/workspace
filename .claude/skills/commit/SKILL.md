@@ -80,7 +80,7 @@ final commit on `main` still forces a release from an otherwise hidden commit.
 
 ### Tags are immutable
 
-In the releasing repos (`core`, `library`, `catalog_opm`, `cli`, `opm-operator`, plus
+In the releasing repos (`core`, `library`, `catalog_opm`, `cli`, `opm-operator`, `opm`, plus
 `release-flow-sandbox`; not `modules` for now), a tag under `refs/tags/` is never moved, deleted
 or re-created, by anyone. The full rule is "Release Tags Are Immutable" in the workspace
 `AGENTS.md`.

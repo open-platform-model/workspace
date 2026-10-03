@@ -47,6 +47,10 @@ releases only after every repo it ships against has released.
 | 3 | `cli` | library, opm-operator (embedded `install.yaml`), the opm catalog and core (templates) |
 | leaves | `modules`, `opm-suite-installer`, `opm-modules` | stay manual |
 
+- `opm` releases on its own train with release-please (opm#23; tags `vX.Y.Z` with no component,
+  first release `v1.0.0-beta.1`). It ships against nothing OPM-owned and no repo pins it, so it
+  is outside the tiers and the cascade: no notify job, no receiver. It is still a releasing repo
+  for "Release Tags Are Immutable" in `AGENTS.md` and for "Owner settings" below.
 - catalog_opm and library do not depend on each other for anything they ship. library uses the opm
   catalog only in tests.
 - The cascade stops at the cli. The three leaves keep their manual bumps for now. Their pins move
@@ -445,10 +449,12 @@ From smallest to largest:
 
 These are owner-only GitHub settings. The cascade does not work without them: a one-commit bot PR
 would squash under its commit subject, which release-please ignores, so nothing would release.
+`opm` is outside the cascade but releases with release-please too, so the merge settings and the
+ruleset on `main` apply to it as well.
 Check each line before relying on it: `gh api repos/open-platform-model/<repo>` for the merge
 settings, and `.../rules/branches/main` and `.../environments` for rulesets and Environments.
 
-### Merge settings (core, catalog_opm, library, opm-operator, cli)
+### Merge settings (core, catalog_opm, library, opm-operator, cli, opm)
 
 - [ ] `squash_merge_commit_title` is `PR_TITLE`
 - [ ] `squash_merge_commit_message` is `BLANK` (owner decision 2026-10-02, reversing `PR_BODY`):
@@ -463,7 +469,7 @@ settings, and `.../rules/branches/main` and `.../environments` for rulesets and 
 - [ ] `delete_branch_on_merge` is `true`
 - [ ] `allow_auto_merge` stays `false`
 
-### Rulesets on main (core, catalog_opm, library, opm-operator, cli, .github)
+### Rulesets on main (core, catalog_opm, library, opm-operator, cli, opm, .github)
 
 - [ ] Every change lands by PR; no direct pushes for anyone
 - [ ] Required checks, per repo:
@@ -475,12 +481,14 @@ settings, and `.../rules/branches/main` and `.../environments` for rulesets and 
     `retire-g4-operator-embed-evidence` retires G4; once `add-embedded-operator-e2e-job` has
     merged and its check has been green, also `E2E (kind, embedded operator)`
   - `.github`: the CI check its `add-cascade-resolver` change adds, once that change lands
+  - opm: none yet, since it has no CI; opm#21's second PR adds the docs `check` and `pins` jobs
 - [ ] Force pushes and branch deletion blocked
 - [ ] The owner has a bypass in pull-request-only mode: they can merge a PR past a red check, never
   push to `main`
 - [ ] No bypass for the `opm-cascade` App or any other bot
 
-The OpenSpec archive commit rides the implementing PR in these repos. Nothing is pushed to `main`
+The OpenSpec archive commit rides the implementing PR in these repos (opm has no OpenSpec
+workspace). Nothing is pushed to `main`
 afterwards. No workflow in these repos pushes to `main` today either: catalog_opm's release
 workflow pushes only to `release-please--*` branches and `.github` only to `tag-ledger`. The
 `enhancements` and `workspace` repos are unchanged for now.

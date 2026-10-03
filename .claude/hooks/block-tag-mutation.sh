@@ -6,9 +6,9 @@
 # the org rulesets and immutable releases are the real control.
 #
 # Scope: only commands that target an in-scope repo are checked. In scope are
-# open-platform-model/{core,library,catalog_opm,cli,opm-operator,release-flow-sandbox}. Everything
-# else (modules, emil-jacero/opm-modules, the workspace repo, a target that cannot be resolved)
-# passes. The target repo is resolved per command:
+# open-platform-model/{core,library,catalog_opm,cli,opm-operator,opm,release-flow-sandbox}.
+# Everything else (modules, emil-jacero/opm-modules, the workspace repo, a target that cannot be
+# resolved) passes. The target repo is resolved per command:
 #   git      the remotes of the repo at cwd (hook input), `cd DIR &&`, `git -C DIR`; for a push
 #            with a named remote or URL, that remote only
 #   gh       -R/--repo, GH_REPO=, a repos/OWNER/REPO/ api path, else the remotes of cwd
@@ -56,7 +56,7 @@ from urllib.parse import unquote
 
 FOOTER = (
     "Release tags are immutable in open-platform-model/{core,library,catalog_opm,cli,opm-operator,"
-    "release-flow-sandbox}: "
+    "opm,release-flow-sandbox}: "
     "no tag under refs/tags/ is ever moved, deleted or re-created, by anyone. Fix a wrong or broken "
     "release by releasing the next version (Go: retract in the new version; CUE/OCI: publish the "
     "next version). Release tags, releases and release/* branches belong to release-please and the "
@@ -66,7 +66,7 @@ FOOTER = (
 )
 
 ORG = "open-platform-model"
-IN_SCOPE = {"core", "library", "catalog_opm", "cli", "opm-operator", "release-flow-sandbox"}
+IN_SCOPE = {"core", "library", "catalog_opm", "cli", "opm-operator", "opm", "release-flow-sandbox"}
 
 PUNCT = ";&|()<>\n"
 SHELLS = {"sh", "bash", "zsh", "dash", "ksh"}
