@@ -217,9 +217,9 @@ shared resolver from the `.github` repo (the `add-cascade-resolver` change), wit
   first under `need-human-review` (see library `derive-fixture-versions`).
 - **Frozen pins** in `.cascade-frozen` are never touched. **Held pins** in `.cascade-hold` stop at
   their `max`.
-- **Version advances happen once per PR.** A fixture or template version keeps `main`'s declared
-  version when that version is not published yet, and otherwise becomes `main`'s declared version
-  plus one. It is never bumped again on each run.
+- **Version advances happen once per PR.** When the fixture or template changed against the
+  merge base, its version keeps `main`'s declared version when that version is not published yet,
+  and otherwise becomes `main`'s declared version plus one. It is never bumped again on each run.
 
 ### One rolling PR per repo
 
@@ -257,12 +257,13 @@ The title names the moved pins, for example `fix(deps): bump core to v2.0.0-beta
 to 4.4.5`. With four or more moved pins it becomes `fix(deps): bump 4 upstream pins`. The body is
 regenerated on each run. It holds a table of moved pins, the triggering releases, warnings, a
 `## Notes` section the bot never edits, and a hidden title marker. The bot carries the Notes over
-byte for byte. It lints its own commit messages, the title and the body above the Notes marker
-for a bare `@word`, which mention-guard fails and GitHub turns into a ping. Human text is not
-linted by the bot: neither human commits on `deps/cascade` nor the Notes. mention-guard still
-checks both, so a bare `@word` a human types in the Notes fails mention-guard on the bot's next
-push. Under the `BLANK` squash message only the title reaches `main`, so a `BREAKING CHANGE:` or
-`Release-As:` line in a quoted upstream changelog, or in any commit body, does nothing.
+byte for byte. It lints its own commit messages, the title and the body above the hidden
+`cascade-notes` marker line for a bare `@word`, which mention-guard fails and GitHub turns into a
+ping. Human text is not linted by the bot: neither human commits on `deps/cascade` nor the Notes.
+mention-guard still checks both, so a bare `@word` a human types in the Notes fails mention-guard
+on the bot's next push. Under the `BLANK` squash message only the title reaches `main`, so a
+`BREAKING CHANGE:` or `Release-As:` line in a quoted upstream changelog, or in any commit body,
+does nothing.
 
 ### Concurrency
 
@@ -276,8 +277,8 @@ The receive workflow runs as two jobs, so the job that runs repository code neve
 key.
 
 - **`compute`** has no secrets and read-only contents. It validates the payload, picks the base,
-  runs `task deps:cascade`, builds the title and body, lints them, and uploads the result as a git
-  bundle.
+  runs `task -x deps:cascade`, builds the title and body, lints them, and uploads the result as a
+  git bundle.
 - **`publish`** runs in the `cascade` Environment, which only `main` can use. It mints the App token
   right before use, pushes the bundle, creates or updates the PR, and sets the G2 and G3 commit
   statuses on any open release PR. If a human pushed in between, `publish` fails and the pending
@@ -533,7 +534,7 @@ workflow pushes only to `release-please--*` branches and `.github` only to `tag-
 | --- | --- | --- |
 | 0 Settings | The owner applies "Owner settings" and creates two sandbox repos. Open checks: a one-commit PR squashes under `PR_TITLE` and releases; cross-repo dispatch and App-pushed PR CI work; a bot merge of `main` that changes a workflow file, and the App's "Update branch", are accepted without the Workflows permission; the org Actions policy lets org repos call `.github` reusable workflows; the owner's pull-request-only bypass really merges a PR past a red required check | every checkbox ticked, except a required check whose job a later change adds (it becomes required when that change lands) |
 | 1 Prepare | The changes below, in parallel. Drift is caught up by hand first (the cli operator embed is already current at `v1.0.0-beta.4`): opm CLI pins (`ci(deps)`; catalog_opm and opm-operator caught up inside their `prepare-release-cascade`), and library's four opm catalog `v4.4.2` `cue.mod` files (`modules/opm_platform`, `testdata/modules/web_app`, `testdata/parity`, `testdata/parity/opm_platform`) as `test(fixtures)` | each change merged |
-| 2 Tasks | The shared resolver in `.github`, then `task deps:cascade` in each repo | a run on `main` exits 3; a run against an older pin produces the expected diff |
+| 2 Tasks | The shared resolver in `.github`, then `task deps:cascade` in each repo | a `task -x` run on `main` exits 3; a run against an older pin produces the expected diff |
 | 3 Wiring | Shared notify and receive workflows in `.github`, then each repo joins with `CASCADE_DRY_RUN=true` | one full two-repo sandbox cycle green; dry runs show the expected diffs |
 | 4 Live | Clear the dry-run flag repo by repo; watch every run | two weeks live |
 | 5 Harden | Make G2 and G3 required; rewire the workspace `task deps:update` | no false alarms in two weeks |
