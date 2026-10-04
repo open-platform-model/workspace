@@ -202,8 +202,9 @@ Each repo has `.github/workflows/deps-cascade.yml`. It runs on three triggers:
 - `workflow_dispatch`, with a `dry_run` input that writes the diff to the job summary and pushes
   nothing
 
-The receiver runs the repo's own `task deps:cascade`. That task exits 0 when it changed files, 3
-when there was nothing to do, and any other code on error. It never swallows a failure. It uses one
+The receiver runs the repo's own `task -x deps:cascade`. That task exits 0 when it changed files,
+3 when there was nothing to do, and any other code on error; without `-x`, go-task reports every
+failing exit as 201. It never swallows a failure. It uses one
 shared resolver from the `.github` repo (the `add-cascade-resolver` change), with these rules:
 
 - **Newest** is one exact version, sorted by semver, within the major the repo consumes. For the
@@ -216,8 +217,9 @@ shared resolver from the `.github` repo (the `add-cascade-resolver` change), wit
   first under `need-human-review` (see library `derive-fixture-versions`).
 - **Frozen pins** in `.cascade-frozen` are never touched. **Held pins** in `.cascade-hold` stop at
   their `max`.
-- **Version advances happen once per PR.** A fixture or template version is set to `main`'s
-  declared version plus one, never bumped again on each run.
+- **Version advances happen once per PR.** A fixture or template version keeps `main`'s declared
+  version when that version is not published yet, and otherwise becomes `main`'s declared version
+  plus one. It is never bumped again on each run.
 
 ### One rolling PR per repo
 
@@ -254,10 +256,12 @@ The bot computes the PR title from the whole diff against `main`, human commits 
 The title names the moved pins, for example `fix(deps): bump core to v2.0.0-beta.2 and opm catalog
 to 4.4.5`. With four or more moved pins it becomes `fix(deps): bump 4 upstream pins`. The body is
 regenerated on each run. It holds a table of moved pins, the triggering releases, warnings, a
-`## Notes` section the bot never edits, and a hidden title marker. The bot lints its own commit
-messages, the title and the body for a bare `@word`, which mention-guard fails and GitHub turns
-into a ping. Human commits on `deps/cascade` are not linted by the bot; mention-guard still checks
-them. Under the `BLANK` squash message only the title reaches `main`, so a `BREAKING CHANGE:` or
+`## Notes` section the bot never edits, and a hidden title marker. The bot carries the Notes over
+byte for byte. It lints its own commit messages, the title and the body above the Notes marker
+for a bare `@word`, which mention-guard fails and GitHub turns into a ping. Human text is not
+linted by the bot: neither human commits on `deps/cascade` nor the Notes. mention-guard still
+checks both, so a bare `@word` a human types in the Notes fails mention-guard on the bot's next
+push. Under the `BLANK` squash message only the title reaches `main`, so a `BREAKING CHANGE:` or
 `Release-As:` line in a quoted upstream changelog, or in any commit body, does nothing.
 
 ### Concurrency
