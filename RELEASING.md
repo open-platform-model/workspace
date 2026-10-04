@@ -482,7 +482,8 @@ settings, and `.../rules/branches/main` and `.../environments` for rulesets and 
     a `Release-As:` footer never reaches `main`
   - release-please opens a release PR only for a releasable commit, so the PR that sets
     `release-as` carries a releasable title type (`fix:`, `feat:`), or lands together with or
-    after a releasable commit that is not yet released
+    after a releasable commit that is not yet released; in catalog_opm the carrier must also
+    touch `src/`, since release-please counts only commits under the package path
 - [ ] Squash merge only: merge commits and rebase merges disabled
 - [ ] `delete_branch_on_merge` is `true`
 - [ ] `allow_auto_merge` stays `false`

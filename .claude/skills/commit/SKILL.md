@@ -69,7 +69,8 @@ final commit on `main` still forces a release from an otherwise hidden commit.
   is cut: while it stays, it pins every later release too.
 - release-please opens a release PR only for a releasable commit, so the PR that sets
   `release-as` carries a releasable title type (`fix:`, `feat:`), or lands together with or after
-  a releasable commit that is not yet released.
+  a releasable commit that is not yet released. In catalog_opm the carrier must also touch `src/`,
+  since release-please counts only commits under the package path.
 - Elsewhere a one-shot `Release-As: X.Y.Z` footer in the **final** commit message on `main` does
   it. In a multi-package repo the footer applies to every package whose paths the commit touches,
   so keep the carrier commit inside the one package that should move.
