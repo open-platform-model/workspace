@@ -164,7 +164,8 @@ instead (below).
     comments in `src/`): read from docs bundles at release tags, one per minor, plus `edge`. A
     released minor gets the fix with the next opm release or a docs revision with
     `tag=opm-vX.Y.Z`; no bundle is published from a release branch (docs-kit DESIGN decision 9).
-  - `catalog_opm` authored pages (`docs/site/`, in v1.0's /docs/): built from git, from
+  - `catalog_opm` authored pages (`docs/site/`, in v1.0's /docs/), until docs-kit phase 3 moves them
+    into the `catalog-opm-docs` bundle: built from git, from
     `release/opm-vX.Y` once it exists, else from `main` while `main` still releases that minor,
     else from the release tag; every build records the SHA (`site/versions.conf`).
   - A docs revision is dispatched by hand:
