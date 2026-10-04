@@ -28,9 +28,9 @@ Words used below:
 - **Glue**: the library code that adapts the kernel to one core schema version (the loader around
   `DefaultSchemaModule` and what reads core's definitions). A core bump can break it without any
   pin conflict.
-- **Identity-advance commit**: the `chore: advance <catalog> identity.Version to <version>` commit
-  that catalog_opm's release workflow pushes onto its own release PR, so each catalog's
-  `identity/identity.cue` declares the version it is released as.
+- **Identity-advance commit**: the `chore: advance opm identity.Version to <version>` commit that
+  catalog_opm's release workflow pushes onto its own release PR, so the opm catalog's
+  `src/identity/identity.cue` declares the version it is released as.
 - **Sandbox repos**: two throwaway repos the owner creates in Phase 0 to rehearse a full
   upstream-to-downstream cascade cycle before any real repo joins.
 
@@ -81,17 +81,17 @@ Where the pins live today:
 | Repo | Class | Where | Upstream |
 | --- | --- | --- | --- |
 | `catalog_opm` | shipped | `src/cue.mod/module.cue` | core |
-| `catalog_opm` | release-tool | `.opm-cli-version` (today `OPM_CLI_VERSION` in three workflows) | opm CLI |
+| `catalog_opm` | release-tool | `.opm-cli-version`, read by the workflows | opm CLI |
 | `library` | shipped | `DefaultSchemaModule` in `opm/schema/loader.go`; `DefaultCoreVersion` in `opm/internal/registrytest/registrytest.go` derives from it once `derive-fixture-versions` lands (a hand-kept mirror until then) | core |
 | `library` | test | the `cue.mod` files under `modules/`, `testdata/modules/`, `testdata/parity/`, `testdata/cue.mod`, `testdata/render/**`, and the version literals in kernel tests | core, opm catalog |
 | `library` | frozen | see library's `.cascade-frozen` (created by `derive-fixture-versions`) | none |
 | `opm-operator` | shipped | `go.mod` (`github.com/open-platform-model/library`) | library |
-| `opm-operator` | test | `config/samples/`, `test/fixtures/` (including `CatalogVersion()` in `test/fixtures/catalog.go`) | core, catalogs |
-| `opm-operator` | release-tool | `.opm-cli-version` (today `go install .../cli/cmd/opm@` in four workflows) | opm CLI |
+| `opm-operator` | test | `config/samples/`, `test/fixtures/` (including `CatalogVersion()` in `test/fixtures/catalog.go`) | core, opm catalog |
+| `opm-operator` | release-tool | `.opm-cli-version`, read by the workflows | opm CLI |
 | `cli` | shipped | `go.mod` (library) | library |
 | `cli` | shipped | `PinnedOperatorVersion` in `internal/operator/manifest.go` plus `internal/operator/dist/install.yaml`, always moved together | opm-operator |
 | `cli` | shipped | `templates/{minimal,standard,advanced}/cue.mod/module.cue`, plus each template's own version | core, opm catalog |
-| `cli` | test | `hack/platform/cue.mod`, `hack/kind-platform.yaml`, `examples/cue.mod`, `tests/fixtures/` (including `tests/fixtures/valid/{simple-module,module-with-debug-values}/cue.mod`), `tests/e2e/testdata/operator-owned/`, and the `cue.mod` files under `internal/instinit/testdata/initvalues/`, `internal/workflow/render/testdata/skip-unprovided/`, `tests/e2e/testdata/duplicate-identities/` and `tests/integration/module-apply/testdata/` | core, catalogs |
+| `cli` | test | `hack/platform/cue.mod`, `hack/kind-platform.yaml`, `examples/cue.mod`, `tests/fixtures/` (including `tests/fixtures/valid/{simple-module,module-with-debug-values}/cue.mod`), `tests/e2e/testdata/operator-owned/`, and the `cue.mod` files under `internal/instinit/testdata/initvalues/`, `internal/workflow/render/testdata/skip-unprovided/`, `tests/e2e/testdata/duplicate-identities/` and `tests/integration/module-apply/testdata/` | core, opm catalog |
 | `cli` | frozen | in `tests/e2e/instance_build_test.go`, the older-core platform, `collisionCorePin` and `olderCatalogPin` (`opmodel.dev/catalogs/opm@v4`); the old core pins in `internal/cmd/platform/check_test.go`; the `TestRender_Golden` core literal in `internal/instinit/render_test.go`; all listed in cli's `.cascade-frozen` (created by `bump-stale-testdata-pins`) | none |
 
 core pins nothing OPM-owned and has no receiver.
@@ -109,16 +109,26 @@ The type follows what ships. The full type rule lives in the workspace commit sk
 - `test`, `ci`, `build`, `chore` and `style` never release.
 - `refactor` releases in library, opm-operator and cli, so early library rewrites reach their
   consumers.
-- `docs` stops releasing in library, opm-operator and cli once each repo's
-  `prepare-release-cascade` change hides it. Until then a docs-only merge there still cuts a
-  release and starts a cascade.
-- Hiding `docs` delays docs on opmodel.dev unless the site builds those repos' docs from the
-  release-branch head, as it already does for core and catalog_opm. Today it builds library and
-  opm-operator docs at what the newest cli tag pins, and cli docs at that tag. The opmodel.dev
-  change `build-docs-from-branch-head` moves library, opm-operator and cli to the branch head (owner
-  decision 2026-10-02), and the docs-hiding section of each `prepare-release-cascade` merges only
-  after it. Until then a docs-only fix in those repos reaches opmodel.dev only with the next
-  release.
+- `docs` never releases in the five cascade repos: each hides it in `release-please-config.json`,
+  so a docs-only merge cuts no release and starts no cascade. (`opm` still releases on `docs`.)
+- A docs-only fix still has to reach opmodel.dev, which reads docs-kit docs bundles (opmodel.dev
+  `pull-reference-bundles`, PR 38). Owner decision 2026-10-04: this supersedes the cascade
+  decision of 2026-10-02 that the site build library, opm-operator and cli docs from the head of
+  `main`. A push to `main` publishes only the `edge` bundle. The fix reaches the site this way:
+  - cli: v1.0 shows the newest cli 1.0 release (`site/bundles.cue`), so the fix arrives with the
+    next cli release or a docs revision of that release.
+  - core, library, opm-operator: v1.0 shows exactly the versions that cli release pins (docs-kit
+    DESIGN decision 10). The fix arrives once a cli release pins a version that carries it, or
+    through a docs revision of the exact version the newest cli release pins.
+  - catalog_opm's Catalogs tab (`docs/catalogs/opm/` and the CUE comments in `src/`): bundles at
+    release tags, one per minor, plus `edge`. A released minor gets the fix with the next opm
+    release or a docs revision with `tag=opm-vX.Y.Z`.
+  - catalog_opm's authored `docs/site/` pages: built from git, from `release/opm-vX.Y` once it
+    exists, else from `main` while `main` still releases that minor, else from the release tag
+    (`site/versions.conf`).
+  - A docs revision is the `mode=revision` dispatch of the repo's `docs.yml`, with `fix=<40-hex
+    sha>`: a single-parent commit on `main` that changes only Markdown or only comments. A cli
+    help-text fix is Go strings, so it needs a release.
 
 ## Bump rule
 
@@ -166,7 +176,8 @@ public, never on the release event itself.
 
 - core does not dispatch to opm-operator or the cli. Their core pins follow the opm catalog, so a
   core-only dispatch would change nothing there.
-- catalog_opm sends one dispatch per run, listing every tag it published.
+- catalog_opm sends one dispatch per run, naming the `opm-vX.Y.Z` tag it published (the opm
+  catalog under `src/` is its only module).
 - The notify job runs in the `cascade` Environment, which holds the App key. The Environment is
   declared inside the reusable notify workflow, because a caller job that uses `uses:` cannot set
   `environment`. That is why core needs the Environment even though it has no receiver.
@@ -191,8 +202,9 @@ Each repo has `.github/workflows/deps-cascade.yml`. It runs on three triggers:
 - `workflow_dispatch`, with a `dry_run` input that writes the diff to the job summary and pushes
   nothing
 
-The receiver runs the repo's own `task deps:cascade`. That task exits 0 when it changed files, 3
-when there was nothing to do, and any other code on error. It never swallows a failure. It uses one
+The receiver runs the repo's own `task -x deps:cascade`. That task exits 0 when it changed files,
+3 when there was nothing to do, and any other code on error; without `-x`, go-task reports every
+failing exit as 201. It never swallows a failure. It uses one
 shared resolver from the `.github` repo (the `add-cascade-resolver` change), with these rules:
 
 - **Newest** is one exact version, sorted by semver, within the major the repo consumes. For the
@@ -205,8 +217,9 @@ shared resolver from the `.github` repo (the `add-cascade-resolver` change), wit
   first under `need-human-review` (see library `derive-fixture-versions`).
 - **Frozen pins** in `.cascade-frozen` are never touched. **Held pins** in `.cascade-hold` stop at
   their `max`.
-- **Version advances happen once per PR.** A fixture or template version is set to `main`'s
-  declared version plus one, never bumped again on each run.
+- **Version advances happen once per PR.** When the fixture or template changed against the
+  merge base, its version keeps `main`'s declared version when that version is not published yet,
+  and otherwise becomes `main`'s declared version plus one. It is never bumped again on each run.
 
 ### One rolling PR per repo
 
@@ -243,11 +256,14 @@ The bot computes the PR title from the whole diff against `main`, human commits 
 The title names the moved pins, for example `fix(deps): bump core to v2.0.0-beta.2 and opm catalog
 to 4.4.5`. With four or more moved pins it becomes `fix(deps): bump 4 upstream pins`. The body is
 regenerated on each run. It holds a table of moved pins, the triggering releases, warnings, a
-`## Notes` section the bot never edits, and a hidden title marker. The bot lints its own commit
-messages, the title and the body for a bare `@word`, which mention-guard fails and GitHub turns
-into a ping. Human commits on `deps/cascade` are not linted by the bot; mention-guard still checks
-them. Under the `BLANK` squash message only the title reaches `main`, so a `BREAKING CHANGE:` or
-`Release-As:` line in a quoted upstream changelog, or in any commit body, does nothing.
+`## Notes` section the bot never edits, and a hidden title marker. The bot carries the Notes over
+byte for byte. It lints its own commit messages, the title and the body above the hidden
+`cascade-notes` marker line for a bare `@word`, which mention-guard fails and GitHub turns into a
+ping. Human text is not linted by the bot: neither human commits on `deps/cascade` nor the Notes.
+mention-guard still checks both, so a bare `@word` a human types in the Notes fails mention-guard
+on the bot's next push. Under the `BLANK` squash message only the title reaches `main`, so a
+`BREAKING CHANGE:` or `Release-As:` line in a quoted upstream changelog, or in any commit body,
+does nothing.
 
 ### Concurrency
 
@@ -261,8 +277,8 @@ The receive workflow runs as two jobs, so the job that runs repository code neve
 key.
 
 - **`compute`** has no secrets and read-only contents. It validates the payload, picks the base,
-  runs `task deps:cascade`, builds the title and body, lints them, and uploads the result as a git
-  bundle.
+  runs `task -x deps:cascade`, builds the title and body, lints them, and uploads the result as a
+  git bundle.
 - **`publish`** runs in the `cascade` Environment, which only `main` can use. It mints the App token
   right before use, pushes the bundle, creates or updates the PR, and sets the G2 and G3 commit
   statuses on any open release PR. If a human pushed in between, `publish` fails and the pending
@@ -353,7 +369,7 @@ it.
 One line: the opm CLI tag that CI and the release job install.
 
 ```text
-v1.0.0-beta.4
+v1.0.0-beta.7
 ```
 
 How CI reads it is up to each repo. One example is
@@ -465,6 +481,10 @@ settings, and `.../rules/branches/main` and `.../environments` for rulesets and 
   - a forced version is `release-as` in `release-please-config.json`, set by a normal PR and
     removed by the next PR once that release is cut (it pins every later release while it stays);
     a `Release-As:` footer never reaches `main`
+  - release-please opens a release PR only for a releasable commit, so the PR that sets
+    `release-as` carries a releasable title type (`fix:`, `feat:`), or lands together with or
+    after a releasable commit that is not yet released; in catalog_opm the carrier must also
+    touch `src/`, since release-please counts only commits under the package path
 - [ ] Squash merge only: merge commits and rebase merges disabled
 - [ ] `delete_branch_on_merge` is `true`
 - [ ] `allow_auto_merge` stays `false`
@@ -513,8 +533,8 @@ workflow pushes only to `release-please--*` branches and `.github` only to `tag-
 | Phase | Content | Gate to leave it |
 | --- | --- | --- |
 | 0 Settings | The owner applies "Owner settings" and creates two sandbox repos. Open checks: a one-commit PR squashes under `PR_TITLE` and releases; cross-repo dispatch and App-pushed PR CI work; a bot merge of `main` that changes a workflow file, and the App's "Update branch", are accepted without the Workflows permission; the org Actions policy lets org repos call `.github` reusable workflows; the owner's pull-request-only bypass really merges a PR past a red required check | every checkbox ticked, except a required check whose job a later change adds (it becomes required when that change lands) |
-| 1 Prepare | The changes below, in parallel. Drift is caught up by hand first (the cli operator embed is already current at `v1.0.0-beta.4`): opm CLI pins (`ci(deps)`; catalog_opm and opm-operator catch up inside their `prepare-release-cascade`, so do not run `task deps:pins:opm-cli` against them before those merge), and library's four opm catalog `v4.4.2` `cue.mod` files (`modules/opm_platform`, `testdata/modules/web_app`, `testdata/parity`, `testdata/parity/opm_platform`) as `test(fixtures)` | each change merged |
-| 2 Tasks | The shared resolver in `.github`, then `task deps:cascade` in each repo | a run on `main` exits 3; a run against an older pin produces the expected diff |
+| 1 Prepare | The changes below, in parallel. Drift is caught up by hand first (the cli operator embed is already current at `v1.0.0-beta.4`): opm CLI pins (`ci(deps)`; catalog_opm and opm-operator caught up inside their `prepare-release-cascade`), and library's four opm catalog `v4.4.2` `cue.mod` files (`modules/opm_platform`, `testdata/modules/web_app`, `testdata/parity`, `testdata/parity/opm_platform`) as `test(fixtures)` | each change merged |
+| 2 Tasks | The shared resolver in `.github`, then `task deps:cascade` in each repo | a `task -x` run on `main` exits 3; a run against an older pin produces the expected diff |
 | 3 Wiring | Shared notify and receive workflows in `.github`, then each repo joins with `CASCADE_DRY_RUN=true` | one full two-repo sandbox cycle green; dry runs show the expected diffs |
 | 4 Live | Clear the dry-run flag repo by repo; watch every run | two weeks live |
 | 5 Harden | Make G2 and G3 required; rewire the workspace `task deps:update` | no false alarms in two weeks |
@@ -524,6 +544,12 @@ until the rulesets exist. Phase 0 gates Phase 3, because the wiring needs the Ap
 Environments and the merge settings.
 
 ### Changes
+
+Status 2026-10-04: Phase 1 merged by 2026-10-02, and the opm CLI catch-up is done. opmodel.dev
+`build-docs-from-branch-head` merged, then was superseded for v1.0 on 2026-10-03 by
+`pull-reference-bundles` (opmodel.dev PR 38; docs bundles at released versions). Owner decision
+2026-10-04: that supersedes the cascade decision that the site build from the head of `main`
+(see "Pin classes"). The rows below are the plan as made.
 
 | Phase | Repo | Change | Content | Depends on |
 | --- | --- | --- | --- | --- |

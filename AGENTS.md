@@ -133,8 +133,11 @@ excluded for now. The personal `emil-jacero/opm-modules` repo is out of scope an
   dispatch recovery path).
 
 **Release branches (policy; automation lands before GA).** A released minor that needs a
-backport or a docs fix gets a maintenance branch `release/<tag-prefix>vX.Y` (core `release/v2.0`;
-library, cli, opm-operator and opm `release/v1.0`; catalog_opm `release/opm-v4.4`).
+backport gets a maintenance branch `release/<tag-prefix>vX.Y` (core `release/v2.0`; library, cli,
+opm-operator and opm `release/v1.0`; catalog_opm `release/opm-v4.4`). So does a fix to
+catalog_opm's authored `docs/site/` pages, since the site still reads them from git; every other
+released docs fix, catalog_opm's Catalogs tab included, ships as a docs revision or with a release
+instead (below).
 
 - **Version-line rule:** `release/vX.Y` is cut only when `main`'s next release is `X.(Y+1).0` or
   higher; after the cut, `main` never releases an `X.Y.*` version.
@@ -146,14 +149,29 @@ library, cli, opm-operator and opm `release/v1.0`; catalog_opm `release/opm-v4.4
 - Every change to a release branch, backport or docs fix, lands through a PR.
 - Release branches are never deleted or force-pushed; end of life is documented, not enforced by
   deleting the branch.
-- A docs-only fix in `core`, `cli`, `library` or `opm-operator` cuts no release: it reaches a
-  released version through a docs revision (`mode: revision` in the repository's `Docs` workflow,
-  dispatched by hand), never through a branch push, because `opmodel.dev` reads their docs from
-  signed docs bundles.
-- A docs-only fix in `catalog_opm` cuts no release either: until its `docs/site/` moves to the
-  `catalog-opm-docs` bundle (docs-kit phase 3), `opmodel.dev` builds it from the release branch
-  head (from `main` while that line has no release branch) and records the SHA in every build
-  (`site/versions.conf`, line mode).
+- A docs-only fix in `core`, `catalog_opm`, `library`, `opm-operator` or `cli` cuts no release:
+  each repo hides `docs` in its `release-please-config.json` (`opm` does not, so a docs fix there
+  releases). A push to `main` publishes only the `edge` docs bundle. The site reads docs-kit docs
+  bundles (opmodel.dev `pull-reference-bundles`, PR 38). Owner decision 2026-10-04: this
+  supersedes the cascade decision of 2026-10-02 that the site build these repos' docs from the
+  head of `main`. How the fix reaches `opmodel.dev`:
+  - `cli`: v1.0 shows the newest cli 1.0 release (`site/bundles.cue`), so the fix arrives with the
+    next cli release or a docs revision of that release.
+  - `core`, `library`, `opm-operator`: v1.0 shows exactly the versions that cli release pins
+    (docs-kit DESIGN decision 10). The fix arrives once a cli release pins a version that carries
+    it, or through a docs revision of the exact version the newest cli release pins.
+  - `catalog_opm` Catalogs tab (`/catalogs/opm/<minor>/`, from `docs/catalogs/opm/` and the CUE
+    comments in `src/`): read from docs bundles at release tags, one per minor, plus `edge`. A
+    released minor gets the fix with the next opm release or a docs revision with
+    `tag=opm-vX.Y.Z`; no bundle is published from a release branch (docs-kit DESIGN decision 9).
+  - `catalog_opm` authored pages (`docs/site/`, in v1.0's /docs/), until docs-kit phase 3 moves them
+    into the `catalog-opm-docs` bundle: built from git, from
+    `release/opm-vX.Y` once it exists, else from `main` while `main` still releases that minor,
+    else from the release tag; every build records the SHA (`site/versions.conf`).
+  - A docs revision is dispatched by hand:
+    `gh workflow run docs.yml --ref main -f mode=revision -f tag=<tag> -f fix=<40-hex sha>`, where
+    `fix` is a single-parent commit on `main` that changes only Markdown or only comments. A cli
+    help-text fix is Go strings, so it needs a release.
 - **Release-branch automation (before GA), not built yet:** the cut action, release workflows that
   run on `release/**`, and PR checks on `release/**`, proven in `release-flow-sandbox` (including a
   cut from a tag older than the change and the main-versus-branch version collision). No repo
@@ -271,6 +289,12 @@ Root `Taskfile.yml` is the only workspace-wide automation. Run from the workspac
 Commit the output of `task deps:update` as `fix(deps)` (shipped pins, triggers a release) and the
 output of `task deps:pins:fixtures` as `test(fixtures)` (no release); `chore` never releases in
 any repo. The full type-to-release rule lives in `.claude/skills/commit/SKILL.md`.
+Until the root tasks call each repo's `deps:cascade` (`RELEASING.md` Phase 5, "rewire
+`deps:update`"), `task deps:update` cannot be scoped (its subtasks are internal), so discard its
+changes under `cli/templates/`, `cli/hack/` and `cli/examples/` before committing
+(`git -C cli checkout -- templates hack examples`): `cue mod get` takes the newest core, which can
+be past the core the opm catalog pins, and the cascade never lowers a consumer's core again. Until
+then those pins move only through the cli's own cascade task, once it lands.
 Publishing modules and catalogs is done by `opm module publish` / `opm catalog publish` (the `cli`
 repo) and by CI, not by root tasks.
 
