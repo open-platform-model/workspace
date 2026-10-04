@@ -93,13 +93,18 @@ or re-created, by anyone. The full rule is "Release Tags Are Immutable" in the w
   releasable commit (`fix(...)`) so release-please cuts the next version. A Go module adds a
   `retract` for the bad version; a CUE/OCI artifact publishes the next version.
 - Release branches are policy only until their automation lands: no repo supports them yet, so fix
-  forward on `main`. Once they exist, a backport for a released minor, or a `catalog_opm` docs
-  fix, is a PR into its `release/<tag-prefix>vX.Y` branch, cut by the automated action, never by
-  hand.
+  forward on `main`. Once they exist, a backport for a released minor, or a fix to
+  `catalog_opm`'s authored `docs/site/` pages, is a PR into its `release/<tag-prefix>vX.Y`
+  branch, cut by the automated action, never by hand.
 - A docs-only fix in `core`, `catalog_opm`, `library`, `opm-operator` or `cli` cuts no release.
-  `opmodel.dev` builds `catalog_opm` docs from the release branch head (from `main` during beta);
-  for the other four the fix reaches the site with the next release or a hand-dispatched docs
-  revision (`docs.yml`, `mode=revision`). Full rule: workspace `AGENTS.md`, "Release branches".
+  `opmodel.dev` reads docs-kit docs bundles (owner decision 2026-10-04, superseding the earlier
+  "site builds from the head of `main`"). v1.0 shows the newest cli release and exactly what it
+  pins, so a cli fix ships with the next cli release, and a core, library or opm-operator fix once
+  a cli release pins a version that carries it. Either can instead ship as a hand-dispatched docs
+  revision (`docs.yml`, `mode=revision`, `fix=<40-hex sha>`) of the exact released version. The
+  `catalog_opm` Catalogs tab works the same way per opm minor; its `docs/site/` pages come from
+  git (`release/opm-vX.Y`, else `main` while it still releases that minor, else the tag). Full
+  rule: workspace `AGENTS.md`, "Release branches".
 
 ## Message Content
 

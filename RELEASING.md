@@ -111,12 +111,24 @@ The type follows what ships. The full type rule lives in the workspace commit sk
   consumers.
 - `docs` never releases in the five cascade repos: each hides it in `release-please-config.json`,
   so a docs-only merge cuts no release and starts no cascade. (`opm` still releases on `docs`.)
-- A docs-only fix still has to reach opmodel.dev. The site's v1.0 reads core, library,
-  opm-operator and cli from their docs bundles at released versions (opmodel.dev
-  `site/bundles.cue`), so a fix there arrives with the next release or a docs revision of the
-  released version, dispatched by hand (`mode=revision` of each repo's `docs.yml`). A push to
-  `main` publishes only the `edge` bundle. catalog_opm's docs still come from its release-branch
-  head (from `main` during beta), so a fix there reaches the site at the next build.
+- A docs-only fix still has to reach opmodel.dev, which reads docs-kit docs bundles (opmodel.dev
+  `pull-reference-bundles`, PR 38). Owner decision 2026-10-04: this supersedes the cascade
+  decision of 2026-10-02 that the site build library, opm-operator and cli docs from the head of
+  `main`. A push to `main` publishes only the `edge` bundle. The fix reaches the site this way:
+  - cli: v1.0 shows the newest cli 1.0 release (`site/bundles.cue`), so the fix arrives with the
+    next cli release or a docs revision of that release.
+  - core, library, opm-operator: v1.0 shows exactly the versions that cli release pins (docs-kit
+    DESIGN decision 10). The fix arrives once a cli release pins a version that carries it, or
+    through a docs revision of the exact version the newest cli release pins.
+  - catalog_opm's Catalogs tab (`docs/catalogs/opm/` and the CUE comments in `src/`): bundles at
+    release tags, one per minor, plus `edge`. A released minor gets the fix with the next opm
+    release or a docs revision with `tag=opm-vX.Y.Z`.
+  - catalog_opm's authored `docs/site/` pages: built from git, from `release/opm-vX.Y` once it
+    exists, else from `main` while `main` still releases that minor, else from the release tag
+    (`site/versions.conf`).
+  - A docs revision is the `mode=revision` dispatch of the repo's `docs.yml`, with `fix=<40-hex
+    sha>`: a single-parent commit on `main` that changes only Markdown or only comments. A cli
+    help-text fix is Go strings, so it needs a release.
 
 ## Bump rule
 
@@ -525,9 +537,10 @@ Environments and the merge settings.
 ### Changes
 
 Status 2026-10-04: Phase 1 merged by 2026-10-02, and the opm CLI catch-up is done. opmodel.dev
-`build-docs-from-branch-head` merged, then was superseded for v1.0 on 2026-10-04 by
-`pull-reference-bundles` (docs bundles at released versions; see "Pin classes"). The rows below
-are the plan as made.
+`build-docs-from-branch-head` merged, then was superseded for v1.0 on 2026-10-03 by
+`pull-reference-bundles` (opmodel.dev PR 38; docs bundles at released versions). Owner decision
+2026-10-04: that supersedes the cascade decision that the site build from the head of `main`
+(see "Pin classes"). The rows below are the plan as made.
 
 | Phase | Repo | Change | Content | Depends on |
 | --- | --- | --- | --- | --- |

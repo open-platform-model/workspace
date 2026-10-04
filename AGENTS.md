@@ -134,9 +134,10 @@ excluded for now. The personal `emil-jacero/opm-modules` repo is out of scope an
 
 **Release branches (policy; automation lands before GA).** A released minor that needs a
 backport gets a maintenance branch `release/<tag-prefix>vX.Y` (core `release/v2.0`; library, cli,
-opm-operator and opm `release/v1.0`; catalog_opm `release/opm-v4.4`). So does a catalog_opm docs
-fix, since the site still reads catalog_opm docs from git; core, library, opm-operator and cli fix
-released docs with a docs revision instead (below).
+opm-operator and opm `release/v1.0`; catalog_opm `release/opm-v4.4`). So does a fix to
+catalog_opm's authored `docs/site/` pages, since the site still reads them from git; every other
+released docs fix, catalog_opm's Catalogs tab included, ships as a docs revision or with a release
+instead (below).
 
 - **Version-line rule:** `release/vX.Y` is cut only when `main`'s next release is `X.(Y+1).0` or
   higher; after the cut, `main` never releases an `X.Y.*` version.
@@ -150,14 +151,26 @@ released docs with a docs revision instead (below).
   deleting the branch.
 - A docs-only fix in `core`, `catalog_opm`, `library`, `opm-operator` or `cli` cuts no release:
   each repo hides `docs` in its `release-please-config.json` (`opm` does not, so a docs fix there
-  releases). A push to `main` publishes only the `edge` docs bundle. How the fix reaches the
-  `opmodel.dev` v1.0 docs:
-  - `core`, `library`, `opm-operator`, `cli`: the site reads their docs bundles at released
-    versions (`site/bundles.cue`), so the fix arrives with the next release or a docs revision
-    of the released version, dispatched by hand:
-    `gh workflow run docs.yml --ref main -f mode=revision -f tag=vX.Y.Z -f fix=<sha>`.
-  - `catalog_opm`: the site builds its docs from the release branch head (from `main` while that
-    line has no release branch) and records the SHA in every build (`site/versions.conf`).
+  releases). A push to `main` publishes only the `edge` docs bundle. The site reads docs-kit docs
+  bundles (opmodel.dev `pull-reference-bundles`, PR 38). Owner decision 2026-10-04: this
+  supersedes the cascade decision of 2026-10-02 that the site build these repos' docs from the
+  head of `main`. How the fix reaches `opmodel.dev`:
+  - `cli`: v1.0 shows the newest cli 1.0 release (`site/bundles.cue`), so the fix arrives with the
+    next cli release or a docs revision of that release.
+  - `core`, `library`, `opm-operator`: v1.0 shows exactly the versions that cli release pins
+    (docs-kit DESIGN decision 10). The fix arrives once a cli release pins a version that carries
+    it, or through a docs revision of the exact version the newest cli release pins.
+  - `catalog_opm` Catalogs tab (`/catalogs/opm/<minor>/`, from `docs/catalogs/opm/` and the CUE
+    comments in `src/`): read from docs bundles at release tags, one per minor, plus `edge`. A
+    released minor gets the fix with the next opm release or a docs revision with
+    `tag=opm-vX.Y.Z`; no bundle is published from a release branch (docs-kit DESIGN decision 9).
+  - `catalog_opm` authored pages (`docs/site/`, in v1.0's /docs/): built from git, from
+    `release/opm-vX.Y` once it exists, else from `main` while `main` still releases that minor,
+    else from the release tag; every build records the SHA (`site/versions.conf`).
+  - A docs revision is dispatched by hand:
+    `gh workflow run docs.yml --ref main -f mode=revision -f tag=<tag> -f fix=<40-hex sha>`, where
+    `fix` is a single-parent commit on `main` that changes only Markdown or only comments. A cli
+    help-text fix is Go strings, so it needs a release.
 - **Release-branch automation (before GA), not built yet:** the cut action, release workflows that
   run on `release/**`, and PR checks on `release/**`, proven in `release-flow-sandbox` (including a
   cut from a tag older than the change and the main-versus-branch version collision). No repo
