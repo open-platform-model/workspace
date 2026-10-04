@@ -105,10 +105,10 @@ or re-created, by anyone. The full rule is "Release Tags Are Immutable" in the w
   "site builds from the head of `main`"). v1.0 shows the newest cli release and exactly what it
   pins, so a cli fix ships with the next cli release, and a core, library or opm-operator fix once
   a cli release pins a version that carries it. Either can instead ship as a hand-dispatched docs
-  revision (`docs.yml`, `mode=revision`, `fix=<40-hex sha>`) of the exact released version. The
-  `catalog_opm` Catalogs tab works the same way per opm minor; its `docs/site/` pages come from
-  git (`release/opm-vX.Y`, else `main` while it still releases that minor, else the tag). Full
-  rule: workspace `AGENTS.md`, "Release branches".
+  revision (`docs.yml`, `mode=revision`, `fix=<40-hex sha>`) of the exact version v1.0 shows (the
+  newest cli release, or the version it pins). The `catalog_opm` Catalogs tab works the same way
+  per opm minor; its `docs/site/` pages come from git (`release/opm-vX.Y`, else `main` while it
+  still releases that minor, else the tag). Full rule: workspace `AGENTS.md`, "Release branches".
 
 ## Message Content
 
