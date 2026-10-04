@@ -26,8 +26,8 @@ release-please cuts a release whenever the changelog it generates is non-empty, 
 type decides whether a release happens:
 
 - **Release:** `feat`, `fix`, `perf`, `revert` everywhere; `deps` and `refactor` in `cli`,
-  `library`, `opm-operator`; `docs` there only until each repo's `prepare-release-cascade` change
-  hides it (owner decision 2026-10-01). See the workspace `RELEASING.md`, "Pin classes".
+  `library`, `opm-operator`; `docs` only in `opm` (hidden in every other repo). See the
+  workspace `RELEASING.md`, "Pin classes".
 - **Never release:** `chore`, `test`, `ci`, `build`, `style` (hidden in every repo).
 
 The type follows **what ships**, not what kind of edit it was:
@@ -45,8 +45,8 @@ The type follows **what ships**, not what kind of edit it was:
 - An opm CLI pin bump (`.opm-cli-version`, or a CI workflow literal) is `ci(deps): ...`: a
   release tool, never shipped.
 
-Escape hatch: a forced version. In the five releasing repos (`core`, `library`, `catalog_opm`,
-`cli`, `opm-operator`) the squash message is `BLANK` once the owner applies workspace
+Escape hatch: a forced version. In the six releasing repos (`core`, `library`, `catalog_opm`,
+`cli`, `opm-operator`, `opm`) the squash message is `BLANK` once the owner applies workspace
 `RELEASING.md` "Owner settings"; until then the repos still squash with `COMMIT_MESSAGES`, so
 merge with an explicit empty body (`gh pr merge --squash --body ''`). Under `BLANK` only the PR
 title reaches `main` and no body footer (`Release-As:`, `BREAKING CHANGE:`) does. There a breaking change is `!` in the PR
@@ -63,10 +63,14 @@ final commit on `main` still forces a release from an otherwise hidden commit.
 
 - Flipping `prerelease-type` in `release-please-config.json` is required but does nothing alone:
   the next release still counts on the old line.
-- In the five releasing repos (squash message `BLANK`) the version crosses only through
+- In the six releasing repos (squash message `BLANK`) the version crosses only through
   `release-as` (e.g. `"release-as": "1.0.0-beta.1"`) on the package in
   `release-please-config.json`, landed by a normal PR. Remove it in the next PR once that release
   is cut: while it stays, it pins every later release too.
+- release-please opens a release PR only for a releasable commit, so the PR that sets
+  `release-as` carries a releasable title type (`fix:`, `feat:`), or lands together with or after
+  a releasable commit that is not yet released. In catalog_opm the carrier must also touch `src/`,
+  since release-please counts only commits under the package path.
 - Elsewhere a one-shot `Release-As: X.Y.Z` footer in the **final** commit message on `main` does
   it. In a multi-package repo the footer applies to every package whose paths the commit touches,
   so keep the carrier commit inside the one package that should move.
@@ -93,10 +97,18 @@ or re-created, by anyone. The full rule is "Release Tags Are Immutable" in the w
   releasable commit (`fix(...)`) so release-please cuts the next version. A Go module adds a
   `retract` for the bad version; a CUE/OCI artifact publishes the next version.
 - Release branches are policy only until their automation lands: no repo supports them yet, so fix
-  forward on `main`. Once they exist, a backport or a docs fix for a released minor is a PR into its
-  `release/<tag-prefix>vX.Y` branch, cut by the automated action, never by hand. A docs-only fix in
-  `core` or `catalog_opm` cuts no release; `opmodel.dev` builds their docs from the release branch
-  head.
+  forward on `main`. Once they exist, a backport for a released minor, or a fix to
+  `catalog_opm`'s authored `docs/site/` pages, is a PR into its `release/<tag-prefix>vX.Y`
+  branch, cut by the automated action, never by hand.
+- A docs-only fix in `core`, `catalog_opm`, `library`, `opm-operator` or `cli` cuts no release.
+  `opmodel.dev` reads docs-kit docs bundles (owner decision 2026-10-04, superseding the earlier
+  "site builds from the head of `main`"). v1.0 shows the newest cli release and exactly what it
+  pins, so a cli fix ships with the next cli release, and a core, library or opm-operator fix once
+  a cli release pins a version that carries it. Either can instead ship as a hand-dispatched docs
+  revision (`docs.yml`, `mode=revision`, `fix=<40-hex sha>`) of the exact version v1.0 shows (the
+  newest cli release, or the version it pins). The `catalog_opm` Catalogs tab works the same way
+  per opm minor; its `docs/site/` pages come from git (`release/opm-vX.Y`, else `main` while it
+  still releases that minor, else the tag). Full rule: workspace `AGENTS.md`, "Release branches".
 
 ## Message Content
 
