@@ -45,8 +45,8 @@ The type follows **what ships**, not what kind of edit it was:
 - An opm CLI pin bump (`.opm-cli-version`, or a CI workflow literal) is `ci(deps): ...`: a
   release tool, never shipped.
 
-Escape hatch: a forced version. In the five releasing repos (`core`, `library`, `catalog_opm`,
-`cli`, `opm-operator`) the squash message is `BLANK` once the owner applies workspace
+Escape hatch: a forced version. In the six releasing repos (`core`, `library`, `catalog_opm`,
+`cli`, `opm-operator`, `opm`) the squash message is `BLANK` once the owner applies workspace
 `RELEASING.md` "Owner settings"; until then the repos still squash with `COMMIT_MESSAGES`, so
 merge with an explicit empty body (`gh pr merge --squash --body ''`). Under `BLANK` only the PR
 title reaches `main` and no body footer (`Release-As:`, `BREAKING CHANGE:`) does. There a breaking change is `!` in the PR
@@ -63,10 +63,13 @@ final commit on `main` still forces a release from an otherwise hidden commit.
 
 - Flipping `prerelease-type` in `release-please-config.json` is required but does nothing alone:
   the next release still counts on the old line.
-- In the five releasing repos (squash message `BLANK`) the version crosses only through
+- In the six releasing repos (squash message `BLANK`) the version crosses only through
   `release-as` (e.g. `"release-as": "1.0.0-beta.1"`) on the package in
   `release-please-config.json`, landed by a normal PR. Remove it in the next PR once that release
   is cut: while it stays, it pins every later release too.
+- release-please opens a release PR only for a releasable commit, so the PR that sets
+  `release-as` carries a releasable title type (`fix:`, `feat:`), or lands together with or after
+  a releasable commit that is not yet released.
 - Elsewhere a one-shot `Release-As: X.Y.Z` footer in the **final** commit message on `main` does
   it. In a multi-package repo the footer applies to every package whose paths the commit touches,
   so keep the carrier commit inside the one package that should move.
