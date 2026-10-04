@@ -146,9 +146,14 @@ library, cli, opm-operator and opm `release/v1.0`; catalog_opm `release/opm-v4.4
 - Every change to a release branch, backport or docs fix, lands through a PR.
 - Release branches are never deleted or force-pushed; end of life is documented, not enforced by
   deleting the branch.
-- A docs-only fix in `core` or `catalog_opm` cuts no release: `opmodel.dev` builds their docs from
-  the release branch head (from `main` while that line has no release branch) and records the SHA
-  in every build (`site/versions.conf`, line mode).
+- A docs-only fix in `core`, `cli`, `library` or `opm-operator` cuts no release: it reaches a
+  released version through a docs revision (`mode: revision` in the repository's `Docs` workflow,
+  dispatched by hand), never through a branch push, because `opmodel.dev` reads their docs from
+  signed docs bundles.
+- A docs-only fix in `catalog_opm` cuts no release either: until its `docs/site/` moves to the
+  `catalog-opm-docs` bundle (docs-kit phase 3), `opmodel.dev` builds it from the release branch
+  head (from `main` while that line has no release branch) and records the SHA in every build
+  (`site/versions.conf`, line mode).
 - **Release-branch automation (before GA), not built yet:** the cut action, release workflows that
   run on `release/**`, and PR checks on `release/**`, proven in `release-flow-sandbox` (including a
   cut from a tag older than the change and the main-versus-branch version collision). No repo
