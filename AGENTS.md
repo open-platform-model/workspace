@@ -288,6 +288,11 @@ Root `Taskfile.yml` is the only workspace-wide automation. Run from the workspac
 Commit the output of `task deps:update` as `fix(deps)` (shipped pins, triggers a release) and the
 output of `task deps:pins:fixtures` as `test(fixtures)` (no release); `chore` never releases in
 any repo. The full type-to-release rule lives in `.claude/skills/commit/SKILL.md`.
+Until the root tasks call each repo's `deps:cascade` (`RELEASING.md` Phase 5, "rewire
+`deps:update`"), do not run `task deps:update` against the cli templates, `cli/hack/` or
+`cli/examples`: `cue mod get` takes the newest core, which can be past the core the opm catalog
+pins, and the cascade never lowers a consumer's core again. Until then those pins move only
+through the cli's own cascade task, once it lands.
 Publishing modules and catalogs is done by `opm module publish` / `opm catalog publish` (the `cli`
 repo) and by CI, not by root tasks.
 
